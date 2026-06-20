@@ -13,6 +13,7 @@ import {
   Stack,
   Text,
   useColorMode,
+  Badge,
 } from '@chakra-ui/react';
 import { MoonIcon, SunIcon } from '@chakra-ui/icons';
 import MenuManagement from '../components/MenuManagement';
@@ -27,42 +28,44 @@ const AdminPage = () => {
 
   return (
     <Box minH="100vh" bg="app.bg">
-      <Box bg="app.surface" borderBottom="1px solid" borderColor="app.border" backdropFilter="blur(18px)">
-        <Container maxW="container.xl" py={6}>
-          <Stack
-            direction={{ base: 'column', md: 'row' }}
-            justify="space-between"
-            align={{ base: 'stretch', md: 'center' }}
-            spacing={4}
-          >
-            <Box>
-              <Text fontSize="sm" color="blue.500" fontWeight="bold" textTransform="uppercase">
-                FoodHub Admin
-              </Text>
-              <Heading size="lg" color="app.text">
-                Operations dashboard
+      {/* Sticky Header Navbar */}
+      <Box
+        bg="app.surface"
+        borderBottom="1px solid"
+        borderColor="app.border"
+        position="sticky"
+        top={0}
+        zIndex={10}
+        backdropFilter="blur(18px)"
+        shadow="sm"
+      >
+        <Container maxW="container.xl" py={4}>
+          <HStack justify="space-between" align="center">
+            <HStack spacing={3}>
+              <Heading size="md" color="brand.500" display="flex" alignItems="center">
+                FoodHub Admin <span style={{ marginLeft: '6px' }}>🔑</span>
               </Heading>
-              <Text color="app.subtleText" fontSize="sm" mt={1}>
-                Track orders, menu health, and kitchen activity from one place.
-              </Text>
-            </Box>
-            <HStack spacing={2} justify={{ base: 'space-between', md: 'flex-end' }}>
-              <Text fontSize="sm" color="app.subtleText" noOfLines={1}>
+              <Badge colorScheme="orange" borderRadius="full" px={2} py={0.5} display={{ base: 'none', md: 'inline-block' }}>
+                Operations
+              </Badge>
+            </HStack>
+            <HStack spacing={4}>
+              <Text fontSize="sm" color="app.subtleText" display={{ base: 'none', md: 'block' }}>
                 {userEmail}
               </Text>
-              <Button size="sm" onClick={toggleColorMode} variant="ghost">
+              <Button size="sm" onClick={toggleColorMode} variant="ghost" _hover={{ bg: 'app.accentWash' }}>
                 {colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
               </Button>
-              <Button size="sm" colorScheme="blue" variant="outline" onClick={logout}>
+              <Button size="sm" colorScheme="orange" variant="outline" onClick={logout}>
                 Logout
               </Button>
             </HStack>
-          </Stack>
+          </HStack>
         </Container>
       </Box>
 
       <Container maxW="container.xl" py={8}>
-        <Tabs index={activeTab} onChange={setActiveTab} variant="enclosed-colored" colorScheme="blue">
+        <Tabs index={activeTab} onChange={setActiveTab} variant="enclosed-colored" colorScheme="orange">
           <TabList borderColor="app.border">
             <Tab>Dashboard</Tab>
             <Tab>Manage Menu</Tab>

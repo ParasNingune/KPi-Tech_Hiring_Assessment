@@ -157,7 +157,7 @@ const MenuManagement = () => {
   if (loading) {
     return (
       <Center minH="60vh">
-        <Spinner size="xl" color="blue.500" />
+        <Spinner size="xl" color="orange.500" />
       </Center>
     );
   }
@@ -178,7 +178,7 @@ const MenuManagement = () => {
 
       <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4} mb={6}>
         {items.map((item) => (
-          <Card key={item.id} shadow="soft" border="1px solid" borderColor="blackAlpha.100">
+          <Card key={item.id} shadow="soft" border="1px solid" borderColor="app.border" bg="app.surface">
             <CardHeader pb={2}>
               <HStack justify="space-between">
                 <VStack align="start" spacing={1} flex={1}>
@@ -203,8 +203,8 @@ const MenuManagement = () => {
             <CardBody>
               <VStack align="start" spacing={2}>
                 <HStack w="full" justify="space-between">
-                  <Text fontSize="sm" fontWeight="bold">
-                    ${item.price.toFixed(2)}
+                  <Text fontSize="sm" fontWeight="bold" color="brand.500">
+                    ₹{item.price.toFixed(2)}
                   </Text>
                   <Tag size="sm">{item.category}</Tag>
                 </HStack>
@@ -227,7 +227,7 @@ const MenuManagement = () => {
       {/* Add/Edit Item Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="lg" isCentered>
         <ModalOverlay />
-        <ModalContent>
+        <ModalContent bg="app.surface" border="1px solid" borderColor="app.border" borderRadius="2xl">
           <ModalHeader>{editingItem ? 'Edit Item' : 'Add New Item'}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
@@ -261,7 +261,7 @@ const MenuManagement = () => {
               </FormControl>
 
               <FormControl isRequired>
-                <FormLabel>Price ($)</FormLabel>
+                <FormLabel>Price (₹)</FormLabel>
                 <NumberInput value={formData.price} onChange={(val) => setFormData((prev) => ({ ...prev, price: val }))} min={0}>
                   <NumberInputField />
                 </NumberInput>

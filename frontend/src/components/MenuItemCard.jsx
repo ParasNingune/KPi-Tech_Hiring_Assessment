@@ -71,8 +71,8 @@ const MenuItemCard = ({ item }) => {
         borderRadius="2xl"
         overflow="hidden"
         border="1px solid"
-        borderColor="blackAlpha.100"
-        bg="white"
+        borderColor="app.border"
+        bg="app.surface"
       >
         <Box h="158px" bgGradient="linear(to-br, orange.300, red.400)" position="relative">
           <Image
@@ -97,7 +97,7 @@ const MenuItemCard = ({ item }) => {
           <HStack justify="space-between" align="start" mb={2}>
             <VStack align="start" spacing={1} flex={1}>
               <Heading size="sm">{item.name}</Heading>
-              <Text fontSize="xs" color="gray.600" noOfLines={2}>
+              <Text fontSize="xs" color="app.subtleText" noOfLines={2}>
                 {item.description}
               </Text>
             </VStack>
@@ -116,9 +116,17 @@ const MenuItemCard = ({ item }) => {
               </HStack>
             )}
 
-            <HStack justify="space-between" w="full" pt={2} borderTop="1px solid" borderColor="gray.100">
+            {item.match_reason && (
+              <Box p={2.5} bg="app.accentWash" borderRadius="xl" mt={2} border="1px solid" borderColor="app.border" w="full">
+                <Text fontSize="xs" color="brand.600" fontStyle="italic">
+                  ✨ AI Match: {item.match_reason}
+                </Text>
+              </Box>
+            )}
+
+            <HStack justify="space-between" w="full" pt={2} borderTop="1px solid" borderColor="app.border">
               <Heading size="md" color="brand.500">
-                ${item.price.toFixed(2)}
+                ₹{item.price.toFixed(2)}
               </Heading>
               <Button
                 size="sm"
@@ -141,7 +149,7 @@ const MenuItemCard = ({ item }) => {
       {/* Add to Cart Modal */}
       <Modal isOpen={isOpen} onClose={onClose} isCentered>
         <ModalOverlay />
-        <ModalContent borderRadius="2xl" overflow="hidden">
+        <ModalContent borderRadius="2xl" overflow="hidden" bg="app.surface" border="1px solid" borderColor="app.border">
           <Box h="160px" position="relative">
             <Image
               src={categoryImages[item.category]}
@@ -157,7 +165,7 @@ const MenuItemCard = ({ item }) => {
           <ModalCloseButton />
           <ModalBody>
             <VStack spacing={4}>
-              <Text color="gray.600">{item.description}</Text>
+              <Text color="app.subtleText">{item.description}</Text>
               <FormControl>
                 <FormLabel>Quantity</FormLabel>
                 <NumberInput
@@ -169,11 +177,11 @@ const MenuItemCard = ({ item }) => {
                   <NumberInputField />
                 </NumberInput>
               </FormControl>
-              <Box w="full" p={3} bg="orange.50" borderRadius="xl">
+              <Box w="full" p={3} bg="app.accentWash" borderRadius="xl">
                 <HStack justify="space-between">
                   <Text fontWeight="bold">Subtotal:</Text>
                   <Heading size="md" color="brand.500">
-                    ${(item.price * quantity).toFixed(2)}
+                    ₹{(item.price * quantity).toFixed(2)}
                   </Heading>
                 </HStack>
               </Box>

@@ -31,13 +31,37 @@ import {
 } from '@chakra-ui/react';
 import { DeleteIcon } from '@chakra-ui/icons';
 import { useCart } from '../utils/CartContext';
-import { orderAPI } from '../utils/api';
+import { orderAPI, searchAPI } from '../utils/api';
 import { useAuth } from '../utils/AuthContext';
 
-const Cart = ({ onOrderPlaced }) => {
-  const { cart, removeItem, updateQuantity, getTotalPrice, clearCart } = useCart();
+const Cart = ({ onOrderPlaced, isDrawer }) => {
+  const { cart, removeItem, updateQuantity, getTotalPrice, clearCart, addItem } = useCart();
   const { userEmail } = useAuth();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [recommendations, setRecommendations] = React.useState([]);
+  const [loadingRecs, setLoadingRecs] = React.useState(false);
+  const toast = useToast();
+
+  React.useEffect(() => {
+    const fetchRecommendations = async () => {
+      if (cart.length === 0) {
+        setRecommendations([]);
+        return;
+      }
+      try {
+        setLoadingRecs(true);
+        const lastItem = cart[cart.length - 1];
+        const response = await searchAPI.getFrequentlyBought(lastItem.id);
+        setRecommendations(response.data.data);
+      } catch (error) {
+        console.error('Failed to load suggestions:', error);
+      } finally {
+        setLoadingRecs(false);
+      }
+    };
+    fetchRecommendations();
+  }, [cart]);
+
   const [formData, setFormData] = React.useState({
     customer_name: '',
     customer_email: userEmail || '',
@@ -46,7 +70,6 @@ const Cart = ({ onOrderPlaced }) => {
     pickup_time: 'ASAP',
   });
   const [submitting, setSubmitting] = React.useState(false);
-  const toast = useToast();
 
   const totalPrice = getTotalPrice();
 
@@ -107,7 +130,16 @@ const Cart = ({ onOrderPlaced }) => {
 
   return (
     <>
-      <Card borderRadius="2xl" overflow="hidden" border="1px solid" borderColor="blackAlpha.100" shadow="soft">
+      <Card
+        w="full"
+        h={isDrawer ? "100%" : "auto"}
+        borderRadius={isDrawer ? "0" : "2xl"}
+        overflowY="auto"
+        border={isDrawer ? "none" : "1px solid"}
+        borderColor="app.border"
+        bg="app.surface"
+        shadow={isDrawer ? "none" : "soft"}
+      >
         <CardHeader bgGradient="linear(to-r, orange.500, red.500)" color="white">
           <HStack justify="space-between">
             <Heading size="md">Your Cart</Heading>
@@ -119,21 +151,21 @@ const Cart = ({ onOrderPlaced }) => {
         <Divider />
         <CardBody>
           {cart.length === 0 ? (
-            <VStack color="gray.500" textAlign="center" py={10} spacing={2}>
-              <Heading size="sm" color="gray.600">Your cart is empty</Heading>
+            <VStack color="app.faintText" textAlign="center" py={10} spacing={2}>
+              <Heading size="sm" color="app.subtleText">Your cart is empty</Heading>
               <Text fontSize="sm">Add a dish to start your order.</Text>
             </VStack>
           ) : (
             <VStack spacing={4}>
               {cart.map((item) => (
-                <Box key={item.id} w="full" p={3} bg="gray.50" borderRadius="xl">
+                <Box key={item.id} w="full" p={3} bg="app.mutedSurface" borderRadius="xl" border="1px solid" borderColor="app.border">
                   <HStack justify="space-between" mb={2}>
                     <VStack align="start" spacing={0} flex={1}>
                       <Text fontWeight="bold" fontSize="sm">
                         {item.name}
                       </Text>
-                      <Text fontSize="xs" color="gray.600">
-                        ${item.price.toFixed(2)} each
+                      <Text fontSize="xs" color="app.subtleText">
+                        ₹{item.price.toFixed(2)} each
                       </Text>
                     </VStack>
                     <Button size="xs" colorScheme="red" variant="ghost" onClick={() => removeItem(item.id)}>
@@ -151,7 +183,7 @@ const Cart = ({ onOrderPlaced }) => {
                       +
                     </Button>
                     <Text fontSize="sm" ml="auto" fontWeight="bold">
-                      ${(item.price * item.quantity).toFixed(2)}
+                      ₹{(item.price * item.quantity).toFixed(2)}
                     </Text>
                   </HStack>
                 </Box>
@@ -159,11 +191,64 @@ const Cart = ({ onOrderPlaced }) => {
 
               <Divider />
 
+              {/* AI Recommended Pairings */}
+              {recommendations.length > 0 && (
+                <VStack align="stretch" spacing={2} w="full" py={1}>
+                  <Text fontSize="xs" fontWeight="bold" color="app.faintText" textTransform="uppercase">
+                    ✨ Suggested Pairings
+                  </Text>
+                  <Stack spacing={2}>
+                    {recommendations.map((rec) => (
+                      <HStack key={rec.id} p={2} bg="app.accentWash" borderRadius="xl" justify="space-between" border="1px solid" borderColor="app.border">
+                        <VStack align="start" spacing={0} flex={1}>
+                          <Text fontSize="xs" fontWeight="bold" color="app.text">
+                            {rec.name}
+                          </Text>
+                          {rec.recommendation_reason && (
+                            <Text fontSize="10px" color="app.subtleText" fontStyle="italic" noOfLines={2}>
+                              {rec.recommendation_reason}
+                            </Text>
+                          )}
+                        </VStack>
+                        <HStack spacing={2}>
+                          <Text fontSize="xs" fontWeight="bold" color="brand.500">
+                            ₹{rec.price.toFixed(2)}
+                          </Text>
+                          <Button
+                            size="xs"
+                            colorScheme="orange"
+                            borderRadius="full"
+                            onClick={() => {
+                              addItem({
+                                id: rec.id,
+                                name: rec.name,
+                                price: rec.price,
+                                quantity: 1,
+                                description: rec.description
+                              });
+                              toast({
+                                title: 'Added to cart',
+                                description: `${rec.name} added`,
+                                status: 'success',
+                                duration: 1.5,
+                              });
+                            }}
+                          >
+                            + Add
+                          </Button>
+                        </HStack>
+                      </HStack>
+                    ))}
+                  </Stack>
+                  <Divider />
+                </VStack>
+              )}
+
               <Box w="full">
                 <HStack justify="space-between" mb={4}>
                   <Text fontWeight="bold">Total:</Text>
                   <Heading size="lg" color="brand.500">
-                    ${totalPrice.toFixed(2)}
+                    ₹{totalPrice.toFixed(2)}
                   </Heading>
                 </HStack>
 
@@ -182,7 +267,7 @@ const Cart = ({ onOrderPlaced }) => {
       {/* Checkout Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="lg" isCentered>
         <ModalOverlay />
-        <ModalContent borderRadius="2xl">
+        <ModalContent borderRadius="2xl" bg="app.surface" border="1px solid" borderColor="app.border">
           <ModalHeader>Checkout</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
@@ -239,11 +324,11 @@ const Cart = ({ onOrderPlaced }) => {
                 />
               </FormControl>
 
-              <Box w="full" p={4} bg="orange.50" borderRadius="lg">
+              <Box w="full" p={4} bg="app.accentWash" borderRadius="lg">
                 <HStack justify="space-between">
                   <Text fontWeight="bold">Order Total:</Text>
                   <Heading size="md" color="brand.500">
-                    ${totalPrice.toFixed(2)}
+                    ₹{totalPrice.toFixed(2)}
                   </Heading>
                 </HStack>
               </Box>

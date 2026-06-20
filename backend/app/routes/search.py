@@ -68,12 +68,6 @@ def search_menu():
     """
     AI-powered natural language menu search.
     Returns available menu items ranked by relevance.
-    
-    Query examples:
-    - "something spicy and vegetarian"
-    - "a light lunch that is not fried"
-    - "high protein meat dish"
-    - "sweet dessert"
     """
     query = request.args.get('q', '').strip()
     
@@ -87,7 +81,33 @@ def search_menu():
         # Get all available items
         all_items = MenuItem.query.filter_by(available=True).all()
         
-        # Score all items
+        # Try LLM search first if available
+        from app.utils.llm import llm_search, is_llm_available
+        llm_results = None
+        if is_llm_available():
+            llm_results = llm_search(query, all_items)
+            
+        if llm_results:
+            items_by_id = {item.id: item for item in all_items}
+            results = []
+            for res in llm_results:
+                item_id = res.get('id')
+                if item_id in items_by_id:
+                    item = items_by_id[item_id]
+                    results.append({
+                        **item.to_dict(),
+                        'relevance_score': res.get('score', 100),
+                        'match_reason': res.get('reason', '')
+                    })
+            return jsonify({
+                'success': True,
+                'query': query,
+                'data': results,
+                'total': len(results),
+                'llm_powered': True
+            }), 200
+            
+        # Fallback to local heuristic scoring
         scored_items = []
         for item in all_items:
             score = calculate_relevance_score(query, item)
@@ -104,7 +124,8 @@ def search_menu():
         results = [
             {
                 **item['item'].to_dict(),
-                'relevance_score': round(item['score'], 2)
+                'relevance_score': round(item['score'], 2),
+                'match_reason': ''
             }
             for item in scored_items
         ]
@@ -113,7 +134,8 @@ def search_menu():
             'success': True,
             'query': query,
             'data': results,
-            'total': len(results)
+            'total': len(results),
+            'llm_powered': False
         }), 200
     
     except Exception as e:
@@ -154,3 +176,124 @@ def get_search_suggestions():
             'success': False,
             'error': str(e)
         }), 500
+
+# Suggest recommendations based on cart items
+@search_bp.route('/recommendations', methods=['GET'])
+def get_recommendations():
+    """Get AI recommendations based on cart items"""
+    cart_ids_str = request.args.get('cart_ids', '').strip()
+    
+    try:
+        # Get all available menu items
+        all_items = MenuItem.query.filter_by(available=True).all()
+        
+        cart_ids = []
+        if cart_ids_str:
+            cart_ids = [int(x) for x in cart_ids_str.split(',') if x.isdigit()]
+            
+        # Filter cart items
+        cart_items = [item for item in all_items if item.id in cart_ids]
+        
+        # 1. Try LLM recommendations first if available
+        from app.utils.llm import llm_recommend, is_llm_available
+        llm_results = []
+        if is_llm_available() and cart_items:
+            llm_results = llm_recommend(cart_items, all_items)
+            
+        if llm_results:
+            items_by_id = {item.id: item for item in all_items}
+            results = []
+            for res in llm_results:
+                item_id = res.get('id')
+                if item_id in items_by_id and item_id not in cart_ids:
+                    item = items_by_id[item_id]
+                    results.append({
+                        **item.to_dict(),
+                        'recommendation_reason': res.get('reason', '')
+                    })
+            return jsonify({
+                'success': True,
+                'data': results,
+                'llm_powered': True
+            }), 200
+            
+        # 2. Heuristic fallback (suggest up to 2 items from other categories)
+        cart_categories = {item.category for item in cart_items}
+        suggestions = []
+        
+        for item in all_items:
+            if item.id not in cart_ids and item.category not in cart_categories:
+                suggestions.append({
+                    **item.to_dict(),
+                    'recommendation_reason': f"Pairs nicely as a delicious {item.category.lower()} choice."
+                })
+                if len(suggestions) >= 2:
+                    break
+                    
+        # If still empty (e.g. cart is empty), recommend popular/default choices
+        if not suggestions:
+            for item in all_items[:2]:
+                if item.id not in cart_ids:
+                    suggestions.append({
+                        **item.to_dict(),
+                        'recommendation_reason': "Popular house choice!"
+                    })
+                    
+        return jsonify({
+            'success': True,
+            'data': suggestions[:2],
+            'llm_powered': False
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+# Chatbot endpoint
+@search_bp.route('/chatbot', methods=['POST'])
+def chatbot_response():
+    """Chatbot responder for user FAQs"""
+    data = request.get_json() or {}
+    message = data.get('message', '').strip()
+    
+    if not message:
+        return jsonify({
+            'success': False,
+            'error': 'Message is required'
+        }), 400
+        
+    try:
+        from app.models.menu import MenuItem
+        all_items = MenuItem.query.filter_by(available=True).all()
+        
+        # Try LLM chatbot first
+        from app.utils.llm import llm_chatbot, is_llm_available
+        reply = None
+        if is_llm_available():
+            reply = llm_chatbot(message, all_items)
+            
+        if reply:
+            return jsonify({
+                'success': True,
+                'reply': reply,
+                'llm_powered': True
+            }), 200
+            
+        # Fallback to local rule-based matching
+        from app.utils.llm import rule_based_faq
+        reply = rule_based_faq(message, all_items)
+        
+        return jsonify({
+            'success': True,
+            'reply': reply,
+            'llm_powered': False
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+

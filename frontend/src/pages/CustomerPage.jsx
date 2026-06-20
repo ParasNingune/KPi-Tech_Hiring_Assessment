@@ -22,6 +22,18 @@ import {
   Badge,
   SimpleGrid,
   useColorMode,
+  Drawer,
+  DrawerBody,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerCloseButton,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
+  IconButton,
 } from '@chakra-ui/react';
 import { MoonIcon, SearchIcon, StarIcon, SunIcon, TimeIcon, RepeatIcon } from '@chakra-ui/icons';
 import { menuAPI, searchAPI } from '../utils/api';
@@ -30,6 +42,7 @@ import { useAuth } from '../utils/AuthContext';
 import MenuItemCard from '../components/MenuItemCard';
 import Cart from '../components/Cart';
 import RecentOrders from '../components/RecentOrders';
+import Chatbot from '../components/Chatbot';
 
 const CustomerPage = () => {
   const [items, setItems] = useState([]);
@@ -43,6 +56,8 @@ const CustomerPage = () => {
   const [sortOption, setSortOption] = useState('featured');
   const [availableOnly, setAvailableOnly] = useState(false);
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
+  const { isOpen: isCartOpen, onOpen: onCartOpen, onClose: onCartClose } = useDisclosure();
+  const { isOpen: isOrdersOpen, onOpen: onOrdersOpen, onClose: onOrdersClose } = useDisclosure();
   const toast = useToast();
   const { cart } = useCart();
   const { userEmail, logout } = useAuth();
@@ -58,13 +73,28 @@ const CustomerPage = () => {
       if (sortOption === 'name') return a.name.localeCompare(b.name);
       return Number(b.available) - Number(a.available);
     });
-
-  const featuredItems = items.filter((item) => item.available).slice(0, 3);
+  const [personalizedRecs, setPersonalizedRecs] = useState([]);
 
   useEffect(() => {
     loadMenuItems();
     loadCategories();
   }, []);
+
+  const loadPersonalizedRecs = async () => {
+    if (!userEmail) return;
+    try {
+      const response = await searchAPI.getPersonalized(userEmail);
+      setPersonalizedRecs(response.data.data);
+    } catch (error) {
+      console.error('Failed to load personalized recommendations', error);
+    }
+  };
+
+  useEffect(() => {
+    if (userEmail) {
+      loadPersonalizedRecs();
+    }
+  }, [userEmail, ordersRefreshKey]);
 
   const loadMenuItems = async () => {
     try {
@@ -120,21 +150,43 @@ const CustomerPage = () => {
     setFilteredItems(items);
   };
 
-  const handleSearch = async (query) => {
-    setSearchQuery(query);
-    
-    if (query.trim().length < 2) {
+  const handleSearchChange = (val) => {
+    setSearchQuery(val);
+    if (!val.trim()) {
       setSearchMode(false);
-      handleCategoryFilter(selectedCategory);
+      if (selectedCategory) {
+        setFilteredItems(items.filter((item) => item.category === selectedCategory));
+      } else if (selectedTag) {
+        setFilteredItems(items.filter((item) => (item.dietary_tags || []).includes(selectedTag)));
+      } else {
+        setFilteredItems(items);
+      }
+    }
+  };
+
+  const triggerSearch = async () => {
+    const query = searchQuery.trim();
+    if (query.length < 2) {
+      setSearchMode(false);
+      if (selectedCategory) {
+        setFilteredItems(items.filter((item) => item.category === selectedCategory));
+      } else if (selectedTag) {
+        setFilteredItems(items.filter((item) => (item.dietary_tags || []).includes(selectedTag)));
+      } else {
+        setFilteredItems(items);
+      }
       return;
     }
 
     try {
       setSearchMode(true);
+      setLoading(true);
       const response = await searchAPI.search(query);
       setFilteredItems(response.data.data);
     } catch (error) {
       toast({ title: 'Error', description: 'Search failed', status: 'error' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -148,126 +200,85 @@ const CustomerPage = () => {
 
   return (
     <Box bg="app.bg" minH="100vh" pb={10}>
-      <Box color="white" px={4} pt={5} pb={10} mb={8} position="relative" overflow="hidden">
-        <Box position="absolute" inset={0} bgGradient="linear(135deg, #fb6a13, #ef4444 48%, #0f766e)" />
-        <Box position="absolute" inset={0} opacity={0.25} bg="radial-gradient(circle at 80% 20%, white 0, transparent 18rem)" />
-        <Container maxW="container.xl">
-          <Stack
-            direction={{ base: 'column', md: 'row' }}
-            justify="space-between"
-            align={{ base: 'stretch', md: 'center' }}
-            spacing={4}
-            mb={10}
-          >
-            <Box>
-              <Heading size="lg">FoodHub</Heading>
-              <Text fontSize="sm" opacity={0.85}>Customer ordering</Text>
-            </Box>
-            <HStack spacing={2} justify={{ base: 'space-between', md: 'flex-end' }}>
-              <Text fontSize="sm" opacity={0.9} noOfLines={1}>
+      {/* Sticky Header Navbar */}
+      <Box
+        bg="app.surface"
+        borderBottom="1px solid"
+        borderColor="app.border"
+        position="sticky"
+        top={0}
+        zIndex={10}
+        backdropFilter="blur(18px)"
+        shadow="sm"
+      >
+        <Container maxW="container.xl" py={4}>
+          <HStack justify="space-between" align="center">
+            <HStack spacing={3}>
+              <Heading size="md" color="brand.500" display="flex" alignItems="center">
+                FoodHub <span style={{ marginLeft: '6px' }}>🍔</span>
+              </Heading>
+              <Badge colorScheme="orange" borderRadius="full" px={2} py={0.5} display={{ base: 'none', md: 'inline-block' }}>
+                Customer Portal
+              </Badge>
+            </HStack>
+            <HStack spacing={4}>
+              <Text fontSize="sm" color="app.subtleText" display={{ base: 'none', md: 'block' }}>
                 {userEmail}
               </Text>
-              <Button size="sm" onClick={toggleColorMode} variant="ghost" color="white" _hover={{ bg: 'whiteAlpha.200' }}>
+              <Button
+                size="sm"
+                colorScheme="orange"
+                leftIcon={<span>🛒</span>}
+                onClick={onCartOpen}
+              >
+                Cart ({cart.length})
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                leftIcon={<TimeIcon />}
+                onClick={onOrdersOpen}
+              >
+                My Orders
+              </Button>
+              <Button size="sm" onClick={toggleColorMode} variant="ghost" _hover={{ bg: 'app.accentWash' }}>
                 {colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
               </Button>
-              <Button size="sm" bg="white" color="brand.600" _hover={{ bg: 'orange.50' }} onClick={logout}>
+              <Button size="sm" colorScheme="orange" variant="outline" onClick={logout}>
                 Logout
               </Button>
             </HStack>
-          </Stack>
-          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={8} alignItems="center">
-            <Box>
-              <Badge bg="whiteAlpha.300" color="white" px={3} py={1} borderRadius="full" mb={4}>
-                Fresh meals, fast checkout
-              </Badge>
-              <Heading size="2xl" lineHeight="1.1" maxW="560px">
-                Discover meals that match every craving.
-              </Heading>
-              <Text mt={4} fontSize="lg" maxW="520px" opacity={0.95}>
-                Search, filter, add to cart, and checkout with a polished restaurant ordering experience.
-              </Text>
-              <HStack mt={6} spacing={4} wrap="wrap">
-                <HStack bg="whiteAlpha.200" px={4} py={2} borderRadius="full">
-                  <StarIcon />
-                  <Text fontSize="sm">Top-rated dishes</Text>
-                </HStack>
-                <HStack bg="whiteAlpha.200" px={4} py={2} borderRadius="full">
-                  <TimeIcon />
-                  <Text fontSize="sm">Fast checkout</Text>
-                </HStack>
-                <HStack bg="whiteAlpha.200" px={4} py={2} borderRadius="full">
-                  <RepeatIcon />
-                  <Text fontSize="sm">Live order tracking</Text>
-                </HStack>
-              </HStack>
-            </Box>
-            <Box>
-              <Card borderRadius="2xl" shadow="lift" overflow="hidden" bg="app.surface" border="1px solid" borderColor="app.border">
-                <CardBody>
-                  <Heading size="md" mb={2} color="app.text">
-                    What are you craving today?
-                  </Heading>
-                  <Text color="app.subtleText" mb={4}>
-                    Search for spicy, vegetarian, light lunch, or high-protein meals.
-                  </Text>
-                  <InputGroup size="lg">
-                    <InputLeftElement pointerEvents="none">
-                      <SearchIcon color="gray.400" />
-                    </InputLeftElement>
-                    <Input
-                      placeholder="Search menu items (e.g., 'spicy vegetarian', 'light lunch')"
-                      value={searchQuery}
-                      onChange={(e) => handleSearch(e.target.value)}
-                      borderRadius="xl"
-                      bg="app.input"
-                    />
-                  </InputGroup>
-                  {featuredItems.length > 0 && (
-                    <Stack mt={5} spacing={2}>
-                      <Text color="app.faintText" fontSize="xs" fontWeight="bold" textTransform="uppercase">
-                        Popular now
-                      </Text>
-                      {featuredItems.map((item) => (
-                        <HStack key={item.id} justify="space-between" bg="app.accentWash" p={3} borderRadius="xl">
-                          <Text color="app.text" fontWeight="semibold" fontSize="sm" noOfLines={1}>
-                            {item.name}
-                          </Text>
-                          <Badge colorScheme="orange">${item.price.toFixed(2)}</Badge>
-                        </HStack>
-                      ))}
-                    </Stack>
-                  )}
-                </CardBody>
-              </Card>
-            </Box>
-          </SimpleGrid>
+          </HStack>
         </Container>
       </Box>
 
-      <Container maxW="container.xl">
-        <Grid templateColumns={{ base: '1fr', lg: '1fr 350px' }} gap={6} alignItems="start">
+      <Container maxW="container.xl" pt={8}>
+        <Box w="full">
         {/* Main Content */}
         <VStack align="stretch" spacing={6}>
-          <SimpleGrid columns={{ base: 1, sm: 3 }} spacing={4}>
-            <Card borderRadius="2xl" shadow="sm" bg="app.surface" border="1px solid" borderColor="app.border">
-              <CardBody>
-                <Text fontSize="sm" color="app.faintText">Items</Text>
-                <Heading size="md" color="brand.500">{items.length}</Heading>
-              </CardBody>
-            </Card>
-            <Card borderRadius="2xl" shadow="sm" bg="app.surface" border="1px solid" borderColor="app.border">
-              <CardBody>
-                <Text fontSize="sm" color="app.faintText">Categories</Text>
-                <Heading size="md" color="brand.500">{categories.length}</Heading>
-              </CardBody>
-            </Card>
-            <Card borderRadius="2xl" shadow="sm" bg="app.surface" border="1px solid" borderColor="app.border">
-              <CardBody>
-                <Text fontSize="sm" color="app.faintText">In cart</Text>
-                <Heading size="md" color="brand.500">{cart.length}</Heading>
-              </CardBody>
-            </Card>
-          </SimpleGrid>
+          {/* Personalized Recommendations Section */}
+          {personalizedRecs && personalizedRecs.length > 0 && (
+            <Box p={5} bg="app.accentWash" borderRadius="2xl" border="1px solid" borderColor="app.border" mb={2}>
+              <Heading size="md" mb={1} color="brand.600">
+                ✨ Selected For You
+              </Heading>
+              <Text fontSize="xs" color="app.subtleText" mb={4}>
+                Personalized dishes based on your preferences and orders from similar customers.
+              </Text>
+              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
+                {personalizedRecs.map((item) => (
+                  <MenuItemCard key={item.id} item={item} />
+                ))}
+              </SimpleGrid>
+            </Box>
+          )}
+
+          <Box mb={2}>
+            <Heading size="lg" mb={1} color="app.text">Explore Menu</Heading>
+            <Text fontSize="sm" color="app.subtleText">
+              Discover meals that match every craving. Search for spicy, vegetarian, light lunch, or high-protein meals.
+            </Text>
+          </Box>
 
           {/* Search Bar */}
           <Card borderRadius="2xl" shadow="soft" overflow="hidden" border="1px solid" borderColor="app.border" bg="app.surface">
@@ -280,19 +291,27 @@ const CustomerPage = () => {
                   <Input
                     placeholder="Search menu items (e.g., 'spicy vegetarian', 'light lunch')"
                     value={searchQuery}
-                    onChange={(e) => handleSearch(e.target.value)}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        triggerSearch();
+                      }
+                    }}
                     borderRadius="xl"
                     bg="app.input"
                   />
                 </InputGroup>
-                <Select value={sortOption} onChange={(e) => setSortOption(e.target.value)} maxW={{ base: 'full', md: '190px' }} borderRadius="xl" bg="app.input">
+                <Button colorScheme="orange" size="lg" onClick={triggerSearch} px={8} borderRadius="xl">
+                  Search
+                </Button>
+                <Select value={sortOption} onChange={(e) => setSortOption(e.target.value)} maxW={{ base: 'full', md: '170px' }} borderRadius="xl" bg="app.input">
                   <option value="featured">Featured</option>
                   <option value="price-low">Price: Low to high</option>
                   <option value="price-high">Price: High to low</option>
                   <option value="name">Name</option>
                 </Select>
                 <HStack minW="145px" justify="space-between">
-                  <Text fontSize="sm" color="app.subtleText">Available</Text>
+                  <Text fontSize="sm" color="app.subtleText">Available Only</Text>
                   <Switch colorScheme="orange" isChecked={availableOnly} onChange={(e) => setAvailableOnly(e.target.checked)} />
                 </HStack>
               </Stack>
@@ -367,7 +386,7 @@ const CustomerPage = () => {
 
           {/* Menu Items Grid */}
           {displayedItems.length > 0 ? (
-            <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={4}>
+            <Grid templateColumns={{ base: '1fr', md: '1fr 1fr', xl: '1fr 1fr 1fr' }} gap={6}>
               {displayedItems.map((item) => (
                 <MenuItemCard key={item.id} item={item} />
               ))}
@@ -385,16 +404,73 @@ const CustomerPage = () => {
             </Center>
           )}
         </VStack>
-
-        {/* Cart Sidebar */}
-        <Box position={{ base: 'relative', lg: 'sticky' }} top={6} h="fit-content">
-          <Stack spacing={6}>
-            <RecentOrders userEmail={userEmail} refreshKey={ordersRefreshKey} />
-            <Cart onOrderPlaced={() => setOrdersRefreshKey((key) => key + 1)} />
-          </Stack>
         </Box>
-      </Grid>
       </Container>
+
+      {/* Floating Action Buttons on Bottom Left */}
+      <IconButton
+        position="fixed"
+        bottom="88px"
+        right="24px"
+        zIndex="1000"
+        colorScheme="orange"
+        size="lg"
+        borderRadius="full"
+        shadow="2xl"
+        icon={
+          <Box position="relative">
+            <span style={{ fontSize: '20px' }}>🛒</span>
+            {cart.length > 0 && (
+              <Badge
+                position="absolute"
+                top="-8px"
+                right="-8px"
+                colorScheme="red"
+                borderRadius="full"
+                fontSize="10px"
+                px={1.5}
+                py={0.5}
+              >
+                {cart.length}
+              </Badge>
+            )}
+          </Box>
+        }
+        onClick={onCartOpen}
+        _hover={{ transform: 'scale(1.08)' }}
+        transition="all 0.2s ease"
+        aria-label="Open Cart"
+      />
+
+      <Chatbot />
+
+      {/* Cart Drawer */}
+      <Drawer isOpen={isCartOpen} placement="right" onClose={onCartClose} size="md">
+        <DrawerOverlay />
+        <DrawerContent bg="app.surface" borderLeft="1px solid" borderColor="app.border" overflow="hidden">
+          <DrawerCloseButton color="white" zIndex="10" />
+          <DrawerBody p={0} overflow="hidden">
+            <Cart
+              onOrderPlaced={() => {
+                setOrdersRefreshKey((key) => key + 1);
+                onCartClose();
+              }}
+              isDrawer={true}
+            />
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
+
+      {/* My Orders Modal */}
+      <Modal isOpen={isOrdersOpen} onClose={onOrdersClose} size="lg" isCentered>
+        <ModalOverlay />
+        <ModalContent borderRadius="2xl" overflow="hidden" bg="app.surface" border="1px solid" borderColor="app.border">
+          <ModalCloseButton />
+          <ModalBody p={0}>
+            <RecentOrders userEmail={userEmail} refreshKey={ordersRefreshKey} />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 };

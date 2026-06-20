@@ -12,8 +12,8 @@ class Order(db.Model):
     status = db.Column(db.String(20), default='Placed')  # Placed, Confirmed, Preparing, Ready, Picked Up
     total_price = db.Column(db.Float, nullable=False)
     special_instructions = db.Column(db.String(500), default='')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
     # Relationships
     items = db.relationship('OrderItem', backref='order', lazy=True, cascade='all, delete-orphan')

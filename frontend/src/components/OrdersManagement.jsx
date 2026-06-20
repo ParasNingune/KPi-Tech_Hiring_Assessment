@@ -83,7 +83,7 @@ const OrdersManagement = () => {
   if (loading) {
     return (
       <Center minH="60vh">
-        <Spinner size="xl" color="blue.500" />
+        <Spinner size="xl" color="orange.500" />
       </Center>
     );
   }
@@ -115,7 +115,7 @@ const OrdersManagement = () => {
       <VStack spacing={4}>
         {filteredOrders.length > 0 ? (
           filteredOrders.map((order) => (
-            <Card key={order.id} w="full" shadow="soft" border="1px solid" borderColor="blackAlpha.100">
+            <Card key={order.id} w="full" shadow="soft" border="1px solid" borderColor="app.border" bg="app.surface">
               <CardHeader>
                 <HStack justify="space-between">
                   <VStack align="start" spacing={1}>
@@ -128,8 +128,8 @@ const OrdersManagement = () => {
                     </Text>
                   </VStack>
                   <VStack align="end" spacing={2}>
-                    <Heading size="sm" color="orange.500">
-                      ${order.total_price.toFixed(2)}
+                    <Heading size="sm" color="brand.500">
+                      ₹{order.total_price.toFixed(2)}
                     </Heading>
                     <Tag colorScheme={getStatusColor(order.status)}>{order.status}</Tag>
                   </VStack>
@@ -146,7 +146,7 @@ const OrdersManagement = () => {
                     <VStack align="start" spacing={1} pl={4}>
                       {order.items.map((item, idx) => (
                         <Text key={idx} fontSize="sm">
-                          • {item.menu_item.name} x{item.quantity} = ${item.subtotal.toFixed(2)}
+                          • {item.menu_item.name} x{item.quantity} = ₹{item.subtotal.toFixed(2)}
                         </Text>
                       ))}
                     </VStack>
@@ -154,7 +154,7 @@ const OrdersManagement = () => {
 
                   {/* Special Instructions */}
                   {order.special_instructions && (
-                    <Box w="full" p={2} bg="yellow.50" borderRadius="md">
+                    <Box w="full" p={2} bg="app.accentWash" borderRadius="md" border="1px solid" borderColor="app.border">
                       <Text fontSize="sm">
                         <strong>Special Instructions:</strong> {order.special_instructions}
                       </Text>
@@ -190,7 +190,7 @@ const OrdersManagement = () => {
         )}
       </VStack>
 
-      <Button mt={6} colorScheme="blue" onClick={loadOrders}>
+      <Button mt={6} colorScheme="orange" onClick={loadOrders} borderRadius="full" shadow="sm">
         Refresh Orders
       </Button>
     </Box>

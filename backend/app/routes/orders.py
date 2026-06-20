@@ -154,7 +154,7 @@ def get_admin_stats():
     """Admin: Get dashboard statistics"""
     try:
         # Get today's date
-        from datetime import date
+        from datetime import date, timedelta
         today = date.today()
         
         # Orders by status
@@ -178,6 +178,22 @@ def get_admin_stats():
         
         popular_items_list = [{'name': item[0], 'count': item[1]} for item in popular_items]
         
+        # 7-day revenue trend directly from the database
+        revenue_trend = []
+        for i in range(6, -1, -1):
+            target_date = today - timedelta(days=i)
+            daily_revenue = db.session.query(
+                func.sum(Order.total_price)
+            ).filter(
+                db.func.date(Order.created_at) == target_date
+            ).scalar() or 0.0
+            
+            label = target_date.strftime('%b %d')
+            revenue_trend.append({
+                'label': label,
+                'value': daily_revenue
+            })
+        
         return jsonify({
             'success': True,
             'data': {
@@ -185,7 +201,8 @@ def get_admin_stats():
                 'orders_by_status': status_breakdown,
                 'today_revenue': today_revenue,
                 'today_orders': len(today_orders),
-                'popular_items': popular_items_list
+                'popular_items': popular_items_list,
+                'revenue_trend': revenue_trend
             }
         }), 200
     
