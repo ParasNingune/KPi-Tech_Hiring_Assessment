@@ -260,7 +260,7 @@ const CustomerPage = () => {
           {personalizedRecs && personalizedRecs.length > 0 && (
             <Box p={5} bg="app.accentWash" borderRadius="2xl" border="1px solid" borderColor="app.border" mb={2}>
               <Heading size="md" mb={1} color="brand.600">
-                ✨ Selected For You
+                Selected For You
               </Heading>
               <Text fontSize="xs" color="app.subtleText" mb={4}>
                 Personalized dishes based on your preferences and orders from similar customers.

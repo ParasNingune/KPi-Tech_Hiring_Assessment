@@ -4,13 +4,9 @@
 
 FoodHub is a full-stack web application for a restaurant with AI-powered natural language menu search. It demonstrates proficiency in React, Flask, and modern web development practices. The application features two user roles: **Admin** (manage menu and orders) and **Customer** (browse menu and place orders).
 
-**Demo Duration:** 30 minutes on Microsoft Teams  
-**Submission Deadline:** 3 days from brief receipt  
-**Evaluation Focus:** System architecture, design decisions, and engineering mindset
-
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
 1. [Features](#features)
 2. [Tech Stack](#tech-stack)
@@ -20,67 +16,50 @@ FoodHub is a full-stack web application for a restaurant with AI-powered natural
 6. [API Documentation](#api-documentation)
 7. [Design Decisions](#design-decisions)
 8. [Key Features Implementation](#key-features-implementation)
-9. [Future Improvements](#future-improvements)
 
 ---
 
-## ✨ Features
+## Features
 
 ### Customer Role
-- ✅ **Browse Menu by Category** - Clean, minimalist interface for browsing items by category (Appetizers, Main Courses, Desserts, Beverages)
-- ✅ **View Item Details** - See full description, price, and dietary information
-- ✅ **AI-Powered Natural Language Search** - Type queries like:
-  - "something spicy and vegetarian"
-  - "a light lunch that is not fried"
-  - "high protein meat dish"
-  - "sweet dessert"
-- ✅ **Shopping Cart** - Add items, adjust quantities, see total price
-- ✅ **Place Orders** - Checkout with customer information and special instructions
-- ✅ **Order Confirmation** - See order details with order ID
+-  **Browse Menu by Category** - Full-width, clean responsive interface for browsing items by categories
+-  **AI-Powered Natural Language Search** - Dynamic query search powered by Google's Gemini LLM (with a local keyword/SequenceMatcher fallback)
+-  **FAQ Chatbot Widget** - Floating chatbot powered by Gemini LLM (with a local rule-based fallback) for answering menu, hours, and location questions
+-  **Selected For You (ML Recommendations)** - Personalized menu recommendations computed using Collaborative Filtering (Cosine Similarity) based on order history (falls back to popular items)
+-  **Place Orders** - Checkout with name, email, phone, and cooking instructions
 
 ### Admin Role
-- ✅ **Dashboard** - View real-time statistics:
-  - Total orders and today's orders
-  - Today's revenue
-  - Orders breakdown by status
-  - Most popular items
-- ✅ **Menu Management** - Add, edit, delete menu items with:
-  - Name, description, category, price
-  - Dietary tags (vegetarian, vegan, gluten-free, spicy, high-protein)
-  - Availability toggle
-- ✅ **Order Management** - View all orders with status:
-  - Track order workflow: Placed → Confirmed → Preparing → Ready → Picked Up
-  - Update order status in real-time
-  - View order details, items, and special instructions
-  - Filter orders by status
+-  **Interactive Analytics Dashboard** - Modern SVG charts populated from database aggregations:
+  - **7-Day Revenue Trend**: Responsive Line/Area chart displaying revenue trends
+  - **Orders Status Breakdown**: Center-aligned SVG Pie chart displaying order states
+  - **Category Revenue Share**: Responsive SVG Donut chart mapping revenue categories
+  - **Frequently Bought Together Pairs**: Aggregated SQL self-join list of items frequently ordered together
+  - **Most Popular Items**: Horizontal bar chart mapping popularity counts
+-  **Menu Management** - Full CRUD with styled green badges for dietary tags, and an inline **Switch toggle button** for stock availability (unavailable items automatically sorted to the bottom of lists and hidden from customer views)
+-  **Order Management** - Real-time queue tracker following the status pipeline
 
 ### Technical Features
-- ✅ **RESTful API** - Python Flask backend with proper HTTP status codes
-- ✅ **Database** - SQLite with SQLAlchemy ORM
-- ✅ **Clean UI** - Chakra UI components with responsive design
-- ✅ **Context API** - Global state management (Cart, Auth)
-- ✅ **Error Handling** - Proper validation and error messages
-- ✅ **Dark Mode** - Light/dark theme toggle
+-  **Secure Authentication** - Database-backed user management and login/signup portals with password hashing
+-  **RESTful API** - Python Flask backend on port `5001` with error handlers and JSON routing
+-  **Unified Architecture** - Consolidated analytics and recommendation microservices directly inside Flask
+- **Clean UI & Dark Mode** - Responsive Chakra UI styled with global Semantic Tokens for seamless light/dark theme switching
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Backend
-- **Framework:** Flask 2.3.2
-- **ORM:** SQLAlchemy 2.0
+- **Framework:** Flask
 - **Database:** SQLite
-- **Middleware:** Flask-CORS
 - **Language:** Python 3.x
 
 ### Frontend
-- **Library:** React 18.2
-- **UI Framework:** Chakra UI 2.8
-- **Build Tool:** Vite 4.5
-- **HTTP Client:** Axios
+- **Library:** React
+- **UI Framework:** Chakra UI
+- **Build Tool:** Vite
 - **State Management:** React Context API
-- **Router:** React Router 6.15
-- **Styling:** Chakra UI + Emotion
+- **Router:** React Router
+- **Styling:** Chakra UI
 
 ### Development
 - **Python Version:** 3.8+
@@ -89,40 +68,40 @@ FoodHub is a full-stack web application for a restaurant with AI-powered natural
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                       FoodHub Architecture                          │
 ├─────────────────────────────────────────────────────────────────────┤
-│                                                                       │
+│                                                                     │
 │  ┌─────────────────┐                    ┌──────────────────┐        │
 │  │   React         │                    │   Flask API      │        │
 │  │   Frontend      │◄──────HTTP────────►│   Backend        │        │
 │  │   (localhost    │      (JSON-RPC)    │   (localhost     │        │
-│  │    :3000)       │                    │    :5000)        │        │
+│  │    :3000)       │                    │    :5001)        │        │
 │  └──────┬──────────┘                    └────────┬─────────┘        │
 │         │                                        │                  │
-│         │ Context API                           │ SQLAlchemy ORM   │
-│         │ - Cart                                └────────┬────────  │
-│         │ - Auth (Admin/Customer)                       │           │
-│         │ - Items & Orders                     ┌────────▼───────┐  │
-│         │                                       │    SQLite      │  │
-│         └───────────────────────────────────►  │    Database    │  │
-│                                                  │ foodstore.db   │  │
-│                    Pages:                        └────────────────┘  │
-│                    - HomePage                                        │
-│                    - CustomerPage                                    │
-│                    - AdminPage                                       │
-│                    - OrdersManagement                                │
-│                    - MenuManagement                                  │
-│                    - Dashboard                                       │
-│                                                                       │
-│  Routes:                                Routes:                      │
-│  /api/menu                              /menu (GET, POST, PUT, DEL)  │
-│  /api/search                            /orders (GET, POST, PUT)     │
-│  /api/orders                            /search (GET)                │
-│                                                                       │
+│         │ Context API                            │ SQLAlchemy ORM   │
+│         │ - Cart                                 └────────┬───────  │
+│         │ - Auth (Admin/Customer)                         │         │
+│         │ - Items & Orders                     ┌──────────▼─────┐   │
+│         │                                      │    SQLite      │   │
+│         └───────────────────────────────────►  │    Database    │   │
+│                                                │ foodstore.db.  │   │
+│                    Pages:                      └────────────────┘   │
+│                    - HomePage                                       │
+│                    - CustomerPage                                   │
+│                    - AdminPage                                      │
+│                    - OrdersManagement                               │
+│                    - MenuManagement                                 │
+│                    - Dashboard                                      │
+│                                                                     │
+│  Routes:                                Routes:                     │
+│  /api/menu                              /menu (GET, POST, PUT, DEL) │
+│  /api/search                            /orders (GET, POST, PUT)    │
+│  /api/orders                            /search (GET)               │
+│                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -155,7 +134,7 @@ FoodHub is a full-stack web application for a restaurant with AI-powered natural
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 KPi-Tech_Hiring_Assessment/
@@ -204,7 +183,7 @@ KPi-Tech_Hiring_Assessment/
 
 ---
 
-## 🚀 Setup Instructions
+## Setup Instructions
 
 ### Prerequisites
 - Python 3.8+ installed
@@ -233,7 +212,7 @@ pip install -r requirements.txt
 python run.py
 ```
 
-The Flask API will be available at: **http://localhost:5000**
+The Flask API will be available at: **http://localhost:5001**
 
 ### Frontend Setup
 
@@ -259,11 +238,11 @@ The SQLite database (`foodstore.db`) is automatically created on first run with 
 
 ---
 
-## 📡 API Documentation
+## API Documentation
 
 ### Base URL
 ```
-http://localhost:5000/api
+http://localhost:5001/api
 ```
 
 ### Menu Endpoints
@@ -413,40 +392,39 @@ GET /search?q=something spicy and vegetarian
 
 ---
 
-## 💡 Design Decisions
+## Design Decisions
 
-### 1. **AI Search Implementation**
-**Decision:** Multi-factor relevance scoring using keyword matching + string similarity
-
-**Rationale:**
-- Avoids complexity of ML models which require training data
-- Still provides meaningful results for natural language queries
-- Explainable: Each relevance score is computed deterministically
-- Scalable: Works well for small to medium-sized menus
-- Easy to debug and improve during demo
-
-**Algorithm:**
-```
-Score = Exact phrase match (100) 
-      + Word matches (30/15/10/5 depending on context)
-      + Dietary tag matches (25)
-      + String similarity bonus (SequenceMatcher)
-```
-
-### 2. **Database Design**
-**Decision:** SQLite with SQLAlchemy ORM, no authentication/authorization layer
+### 1. **AI Search & Chatbot Integration**
+**Decision:** Dual-mode execution combining Google's Gemini LLM (`gemini-latest-flash`) with local NLP string-matching fallbacks.
 
 **Rationale:**
-- SQLite needs no external dependency setup
-- SQLAlchemy provides ORM abstraction, easy to migrate to PostgreSQL
-- Role switching in UI (not backend) for demo simplicity
-- Focus on core features rather than auth infrastructure
-- Assumption: This is demo app, production would use proper auth
+- **Semantic Reasoning**: The Gemini model provides natural, semantic search matching (e.g., matching "spicy chicken" with a relevant main course) and explains its choices dynamically to the user.
+- **High Availability**: If the API key is missing or the external API call fails, the search and chatbot engines fall back to a local token scoring algorithm (TF-IDF & SequenceMatcher) and rule-based matches, ensuring zero page crashes.
 
-**Schema:**
-- `MenuItem`: name, description, category, price, dietary_tags, available
-- `Order`: customer_info, status, total_price
-- `OrderItem`: order_id, menu_item_id, quantity, price (snapshot)
+### 2. **Database Design & Authentication**
+**Decision:** SQLite with SQLAlchemy, securing roles with a dedicated `users` table and salted password hashing.
+
+**Rationale:**
+- **Zero Configuration**: SQLite operates locally, requiring no database installation or service setup.
+- **Hashed Passwords**: Password validation uses Werkzeug's `generate_password_hash` and `check_password_hash` to secure accounts, deprecating plain text comparisons.
+- **Schemas**:
+  - `User`: Handles accounts (`admin` or `customer`) and securely hashes passwords.
+  - `MenuItem`: Represents inventory, price in Rupees (₹), dietary tags, and availability.
+  - `Order` & `OrderItem`: Tracks order metrics and details.
+
+### 3. **Recommendation Engines (ML & SQL)**
+**Decision:** Cosine Similarity Collaborative Filtering for personalization and SQL self-joins for cross-sell recommendations.
+
+**Rationale:**
+- **User-Based Filtering**: Personalized recommendations calculate correlation matrices between user purchasing profiles, predicting item interest based on order habits of similar users.
+- **Order Correlation**: Cart cross-sells run high-speed SQL self-joins on the database server to find items frequently checked out together.
+
+### 4. **SVG Dashboard Charts**
+**Decision:** Render responsive vector SVGs inside React, backed by database query calculations.
+
+**Rationale:**
+- **Direct Aggregation**: All statistics (such as revenue timelines, slice percentages, and category shares) are computed inside SQLite via SQL queries, keeping front-end operations fast.
+- **Adaptive SVGs**: Light/dark compatible vector diagrams render perfectly without additional heavy JS charting libraries.
 
 ### 3. **Frontend State Management**
 **Decision:** React Context API instead of Redux
@@ -478,18 +456,9 @@ Score = Exact phrase match (100)
 - Can be expanded with proper backend auth
 - Navbar role switcher for demo purposes
 
-### 6. **API Design**
-**Decision:** RESTful, JSON-based, proper HTTP status codes
-
-**Rationale:**
-- Industry standard
-- Easy to test and document
-- Frontend can easily migrate to mobile apps
-- Clear separation of concerns from UI logic
-
 ---
 
-## 🎯 Key Features Implementation
+## Key Features Implementation
 
 ### AI-Powered Menu Search
 
@@ -524,25 +493,25 @@ The search algorithm balances accuracy with simplicity:
 
 ```
 ┌──────────────────────────────────────────────────┐
-│          ORDER LIFECYCLE                         │
+│                ORDER LIFECYCLE                   │
 ├──────────────────────────────────────────────────┤
-│ 1. PLACED (Customer submits order)              │
-│    • Order created with items and customer info │
-│    • Cart cleared                               │
-│                                                   │
-│ 2. CONFIRMED (Admin confirms receipt)          │
-│    • Payment verified, order acknowledged       │
-│                                                   │
-│ 3. PREPARING (Kitchen starts preparation)      │
-│    • Items are being prepared                   │
-│                                                   │
-│ 4. READY (Order completed)                      │
-│    • Customer notified (in real app)            │
-│    • Waiting for pickup                         │
-│                                                   │
-│ 5. PICKED UP (Customer picks up order)         │
-│    • Order complete                             │
-│    • Can be archived                            │
+│ 1. PLACED (Customer submits order)               │
+│    • Order created with items and customer info  │
+│    • Cart cleared                                │
+│                                                  │
+│ 2. CONFIRMED (Admin confirms receipt)            │
+│    • Payment verified, order acknowledged        │
+│                                                  │
+│ 3. PREPARING (Kitchen starts preparation)        │
+│    • Items are being prepared                    │
+│                                                  │
+│ 4. READY (Order completed)                       │
+│    • Customer notified (in real app)             │
+│    • Waiting for pickup                          │
+│                                                  │
+│ 5. PICKED UP (Customer picks up order)           │
+│    • Order complete                              │
+│    • Can be archived                             │
 └──────────────────────────────────────────────────┘
 ```
 
@@ -557,72 +526,7 @@ Real-time statistics showing:
 
 ---
 
-## 🔄 Future Improvements
-
-### Phase 2 - Production Ready
-1. **Authentication & Authorization**
-   - User registration/login
-   - JWT tokens
-   - Role-based access control (backend)
-   - Session management
-
-2. **Payment Integration**
-   - Stripe or PayPal integration
-   - Order payment tracking
-   - Receipt generation
-
-3. **Real-time Updates**
-   - WebSocket for live order status
-   - Admin/customer notifications
-   - Real-time dashboard updates
-
-4. **Cloud Deployment**
-   - Backend: AWS/Heroku
-   - Frontend: Vercel/Netlify
-   - Database: PostgreSQL on RDS
-
-5. **Enhanced Search**
-   - Machine learning model (TF-IDF, word embeddings)
-   - Semantic search
-   - Autocomplete suggestions
-   - Search analytics
-
-6. **Advanced Features**
-   - Inventory management
-   - Kitchen display system (KDS)
-   - Customer reviews/ratings
-   - Loyalty programs
-   - Multi-language support
-
-7. **Analytics & Reporting**
-   - Sales trends
-   - Inventory forecasting
-   - Customer analytics
-   - Performance metrics
-
-### Phase 3 - Enterprise
-- Multi-restaurant support
-- Delivery integrations
-- Mobile app
-- Advanced admin features
-- API for third-party integrations
-
----
-
-## 📝 Assumptions & Constraints
-
-1. **No Real Authentication:** Role switching is UI-based for demo
-2. **Local Database:** SQLite for simplicity (production would use PostgreSQL)
-3. **No Payment Gateway:** Payment is not connected to real providers
-4. **Single Restaurant:** App manages one restaurant, not multi-location
-5. **No Email Notifications:** Orders are stored but notifications not sent
-6. **Simple Search:** Not using ML/semantic search for demo
-7. **CORS Enabled:** Allows local testing, would be restricted in production
-8. **No Rate Limiting:** Added for production environment
-
----
-
-## 🧪 Testing the Application
+## Testing the Application
 
 ### Test Customer Workflow
 1. Start with "Customer" role in navbar
@@ -643,26 +547,3 @@ Real-time statistics showing:
 4. View all orders in "Manage Orders"
 5. Update order status
 6. Watch dashboard update
-
----
-
-## 🤝 Support & Questions
-
-For questions during the demo, I'm prepared to discuss:
-- Why certain tech choices were made
-- How to scale to production
-- Edge cases and error handling
-- Database schema evolution
-- Performance optimization strategies
-- Trade-offs between simplicity and features
-
----
-
-## 📄 License
-
-This project is part of KPi-Tech Services Inc. Hiring Assessment.
-
----
-
-**Created:** June 18, 2026  
-**Submission Format:** GitHub Repository with live demo on Microsoft Teams

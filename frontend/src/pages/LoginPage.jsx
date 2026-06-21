@@ -21,6 +21,7 @@ import {
   Tab,
   TabPanels,
   TabPanel,
+  useColorMode,
 } from '@chakra-ui/react';
 import { CheckCircleIcon, WarningIcon } from '@chakra-ui/icons';
 import { useAuth } from '../utils/AuthContext';
@@ -35,6 +36,14 @@ const LoginPage = () => {
   const [tabIndex, setTabIndex] = useState(0);
   const { login } = useAuth();
   const toast = useToast();
+  const { colorMode } = useColorMode();
+
+  const handleRoleChange = (newRole) => {
+    setRole(newRole);
+    if (newRole === 'admin') {
+      setTabIndex(0);
+    }
+  };
 
   const validatePassword = (pwd) => {
     const constraints = {
@@ -163,7 +172,7 @@ const LoginPage = () => {
   return (
     <Center
       minH="100vh"
-      bgGradient="linear(to-br, orange.50, white, cyan.50)"
+      bg="transparent"
       px={4}
       py={10}
     >
@@ -172,9 +181,9 @@ const LoginPage = () => {
         shadow="2xl"
         borderRadius="2xl"
         border="1px solid"
-        borderColor="blackAlpha.100"
+        borderColor="app.border"
         overflow="hidden"
-        bg="whiteAlpha.900"
+        bg="app.surface"
         backdropFilter="blur(18px)"
       >
         <Box h="8px" bgGradient="linear(to-r, brand.500, red.400, blue.400)" />
@@ -187,7 +196,7 @@ const LoginPage = () => {
               <Heading size="xl" bgGradient="linear(to-r, brand.500, red.500)" bgClip="text">
                 FoodHub
               </Heading>
-              <Text fontSize="sm" color="gray.600" maxW="300px">
+              <Text fontSize="sm" color="app.subtleText" maxW="300px">
                 Sign in to open the right workspace for your account.
               </Text>
             </VStack>
@@ -201,7 +210,7 @@ const LoginPage = () => {
                 variant={role === 'customer' ? 'solid' : 'outline'}
                 colorScheme="orange"
                 borderRadius="xl"
-                onClick={() => setRole('customer')}
+                onClick={() => handleRoleChange('customer')}
                 isDisabled={loading}
               >
                 <Box>
@@ -217,7 +226,7 @@ const LoginPage = () => {
                 variant={role === 'admin' ? 'solid' : 'outline'}
                 colorScheme="blue"
                 borderRadius="xl"
-                onClick={() => setRole('admin')}
+                onClick={() => handleRoleChange('admin')}
                 isDisabled={loading}
               >
                 <Box>
@@ -227,17 +236,28 @@ const LoginPage = () => {
               </Button>
             </SimpleGrid>
 
-            <Box w="full" bg={role === 'admin' ? 'blue.50' : 'orange.50'} borderRadius="xl" p={3}>
-              <Text fontSize="sm" color={role === 'admin' ? 'blue.700' : 'orange.700'} fontWeight="semibold">
-                Signing {tabIndex === 0 ? 'in' : 'up'} as {role === 'admin' ? 'Admin' : 'Customer'}
+            <Box
+              w="full"
+              bg={colorMode === 'dark' ? (role === 'admin' ? 'blue.900' : 'orange.900') : (role === 'admin' ? 'blue.50' : 'orange.50')}
+              borderRadius="xl"
+              p={3}
+            >
+              <Text
+                fontSize="sm"
+                color={colorMode === 'dark' ? (role === 'admin' ? 'blue.200' : 'orange.200') : (role === 'admin' ? 'blue.700' : 'orange.700')}
+                fontWeight="semibold"
+              >
+                Signing {role === 'admin' ? 'in' : tabIndex === 0 ? 'in' : 'up'} as {role === 'admin' ? 'Admin' : 'Customer'}
               </Text>
             </Box>
 
             <Tabs index={tabIndex} onChange={setTabIndex} w="full" variant="soft-rounded" colorScheme={role === 'admin' ? 'blue' : 'orange'}>
-              <TabList spacing={2} mb={6}>
-                <Tab flex="1" fontSize="sm" fontWeight="semibold">Login</Tab>
-                <Tab flex="1" fontSize="sm" fontWeight="semibold">Sign Up</Tab>
-              </TabList>
+              {role !== 'admin' && (
+                <TabList spacing={2} mb={6}>
+                  <Tab flex="1" fontSize="sm" fontWeight="semibold">Login</Tab>
+                  <Tab flex="1" fontSize="sm" fontWeight="semibold">Sign Up</Tab>
+                </TabList>
+              )}
 
               <TabPanels>
                 {/* Login Tab */}
@@ -245,7 +265,7 @@ const LoginPage = () => {
                   <form onSubmit={handleLogin}>
                     <VStack spacing={4}>
                       <FormControl isRequired>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel color="app.text">Email</FormLabel>
                         <Input
                           type="email"
                           placeholder="Enter your email"
@@ -253,26 +273,31 @@ const LoginPage = () => {
                           onChange={(e) => setEmail(e.target.value)}
                           disabled={loading}
                           borderRadius="lg"
-                          bg="white"
+                          bg="app.input"
+                          borderColor="app.border"
+                          color="app.text"
+                          _placeholder={{ color: 'app.faintText' }}
                         />
                       </FormControl>
 
                       <FormControl isRequired>
-                        <FormLabel>Password</FormLabel>
+                        <FormLabel color="app.text">Password</FormLabel>
                         <Input
                           type="password"
                           placeholder="Enter your password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           disabled={loading}
-                          borderColor={password && !isPasswordValid ? 'red.500' : undefined}
+                          borderColor={password && !isPasswordValid ? 'red.500' : 'app.border'}
                           borderRadius="lg"
-                          bg="white"
+                          bg="app.input"
+                          color="app.text"
+                          _placeholder={{ color: 'app.faintText' }}
                         />
                         {password && (
-                          <Box mt={3} p={3} bg="gray.50" borderRadius="lg" fontSize="sm">
-                            <Text fontWeight="bold" mb={2}>Password requirements:</Text>
-                            <VStack align="start" spacing={1}>
+                          <Box mt={3} p={3} bg="app.mutedSurface" borderRadius="lg" fontSize="sm">
+                            <Text fontWeight="bold" mb={2} color="app.text">Password requirements:</Text>
+                            <VStack align="start" spacing={1} color="app.subtleText">
                               <HStack spacing={2}>
                                 <Icon as={passwordConstraints.length ? CheckCircleIcon : WarningIcon} color={passwordConstraints.length ? 'green.500' : 'red.500'} />
                                 <Text>At least 8 characters</Text>
@@ -310,108 +335,111 @@ const LoginPage = () => {
                 </TabPanel>
 
                 {/* Signup Tab */}
-                <TabPanel p={0}>
-                  <form onSubmit={handleSignup}>
-                    <VStack spacing={4}>
-                      <FormControl isRequired>
-                        <FormLabel>Email</FormLabel>
-                        <Input
-                          type="email"
-                          placeholder="Enter your email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          disabled={loading}
-                          borderRadius="lg"
-                          bg="white"
-                        />
-                      </FormControl>
+                {role !== 'admin' && (
+                  <TabPanel p={0}>
+                    <form onSubmit={handleSignup}>
+                      <VStack spacing={4}>
+                        <FormControl isRequired>
+                          <FormLabel color="app.text">Email</FormLabel>
+                          <Input
+                            type="email"
+                            placeholder="Enter your email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            disabled={loading}
+                            borderRadius="lg"
+                            bg="app.input"
+                            borderColor="app.border"
+                            color="app.text"
+                            _placeholder={{ color: 'app.faintText' }}
+                          />
+                        </FormControl>
 
-                      <FormControl isRequired>
-                        <FormLabel>Password</FormLabel>
-                        <Input
-                          type="password"
-                          placeholder="Create a password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          disabled={loading}
-                          borderColor={password && !isPasswordValid ? 'red.500' : undefined}
-                          borderRadius="lg"
-                          bg="white"
-                        />
-                        {password && (
-                          <Box mt={3} p={3} bg="gray.50" borderRadius="lg" fontSize="sm">
-                            <Text fontWeight="bold" mb={2}>Password requirements:</Text>
-                            <VStack align="start" spacing={1}>
-                              <HStack spacing={2}>
-                                <Icon as={passwordConstraints.length ? CheckCircleIcon : WarningIcon} color={passwordConstraints.length ? 'green.500' : 'red.500'} />
-                                <Text>At least 8 characters</Text>
-                              </HStack>
-                              <HStack spacing={2}>
-                                <Icon as={passwordConstraints.uppercase ? CheckCircleIcon : WarningIcon} color={passwordConstraints.uppercase ? 'green.500' : 'red.500'} />
-                                <Text>One uppercase letter (A-Z)</Text>
-                              </HStack>
-                              <HStack spacing={2}>
-                                <Icon as={passwordConstraints.lowercase ? CheckCircleIcon : WarningIcon} color={passwordConstraints.lowercase ? 'green.500' : 'red.500'} />
-                                <Text>One lowercase letter (a-z)</Text>
-                              </HStack>
-                              <HStack spacing={2}>
-                                <Icon as={passwordConstraints.symbol ? CheckCircleIcon : WarningIcon} color={passwordConstraints.symbol ? 'green.500' : 'red.500'} />
-                                <Text>One symbol (!@#$%^&* etc)</Text>
-                              </HStack>
-                            </VStack>
-                          </Box>
-                        )}
-                      </FormControl>
+                        <FormControl isRequired>
+                          <FormLabel color="app.text">Password</FormLabel>
+                          <Input
+                            type="password"
+                            placeholder="Create a password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            disabled={loading}
+                            borderColor={password && !isPasswordValid ? 'red.500' : 'app.border'}
+                            borderRadius="lg"
+                            bg="app.input"
+                            color="app.text"
+                            _placeholder={{ color: 'app.faintText' }}
+                          />
+                          {password && (
+                            <Box mt={3} p={3} bg="app.mutedSurface" borderRadius="lg" fontSize="sm">
+                              <Text fontWeight="bold" mb={2} color="app.text">Password requirements:</Text>
+                              <VStack align="start" spacing={1} color="app.subtleText">
+                                <HStack spacing={2}>
+                                  <Icon as={passwordConstraints.length ? CheckCircleIcon : WarningIcon} color={passwordConstraints.length ? 'green.500' : 'red.500'} />
+                                  <Text>At least 8 characters</Text>
+                                </HStack>
+                                <HStack spacing={2}>
+                                  <Icon as={passwordConstraints.uppercase ? CheckCircleIcon : WarningIcon} color={passwordConstraints.uppercase ? 'green.500' : 'red.500'} />
+                                  <Text>One uppercase letter (A-Z)</Text>
+                                </HStack>
+                                <HStack spacing={2}>
+                                  <Icon as={passwordConstraints.lowercase ? CheckCircleIcon : WarningIcon} color={passwordConstraints.lowercase ? 'green.500' : 'red.500'} />
+                                  <Text>One lowercase letter (a-z)</Text>
+                                </HStack>
+                                <HStack spacing={2}>
+                                  <Icon as={passwordConstraints.symbol ? CheckCircleIcon : WarningIcon} color={passwordConstraints.symbol ? 'green.500' : 'red.500'} />
+                                  <Text>One symbol (!@#$%^&* etc)</Text>
+                                </HStack>
+                              </VStack>
+                            </Box>
+                          )}
+                        </FormControl>
 
-                      <FormControl isRequired>
-                        <FormLabel>Confirm Password</FormLabel>
-                        <Input
-                          type="password"
-                          placeholder="Confirm your password"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          disabled={loading}
-                          borderColor={confirmPassword && password !== confirmPassword ? 'red.500' : confirmPassword && password === confirmPassword ? 'green.500' : undefined}
-                          borderRadius="lg"
-                          bg="white"
-                        />
-                        {confirmPassword && password !== confirmPassword && (
-                          <Text fontSize="sm" color="red.500" mt={2}>Passwords do not match</Text>
-                        )}
-                        {confirmPassword && password === confirmPassword && (
-                          <Text fontSize="sm" color="green.500" mt={2}>Passwords match ✓</Text>
-                        )}
-                      </FormControl>
+                        <FormControl isRequired>
+                          <FormLabel color="app.text">Confirm Password</FormLabel>
+                          <Input
+                            type="password"
+                            placeholder="Confirm your password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            disabled={loading}
+                            borderColor={confirmPassword && password !== confirmPassword ? 'red.500' : confirmPassword && password === confirmPassword ? 'green.500' : 'app.border'}
+                            borderRadius="lg"
+                            bg="app.input"
+                            color="app.text"
+                            _placeholder={{ color: 'app.faintText' }}
+                          />
+                          {confirmPassword && password !== confirmPassword && (
+                            <Text fontSize="sm" color="red.500" mt={2}>Passwords do not match</Text>
+                          )}
+                          {confirmPassword && password === confirmPassword && (
+                            <Text fontSize="sm" color="green.500" mt={2}>Passwords match ✓</Text>
+                          )}
+                        </FormControl>
 
-                      <Button
-                        type="submit"
-                        colorScheme={role === 'admin' ? 'blue' : 'orange'}
-                        width="100%"
-                        isLoading={loading}
-                        size="lg"
-                        borderRadius="xl"
-                        isDisabled={!isPasswordValid || !email || !password || password !== confirmPassword}
-                      >
-                        Create Account
-                      </Button>
-                    </VStack>
-                  </form>
-                </TabPanel>
+                        <Button
+                          type="submit"
+                          colorScheme={role === 'admin' ? 'blue' : 'orange'}
+                          width="100%"
+                          isLoading={loading}
+                          size="lg"
+                          borderRadius="xl"
+                          isDisabled={!isPasswordValid || !email || !password || password !== confirmPassword}
+                        >
+                          Create Account
+                        </Button>
+                      </VStack>
+                    </form>
+                  </TabPanel>
+                )}
               </TabPanels>
             </Tabs>
 
-            <Box pt={4} borderTop="1px solid" borderColor="gray.200" width="100%">
-              <Text fontSize="xs" color="gray.500" textAlign="center" mb={2} fontWeight="bold">
-                Seeded Accounts (Passwords are stored hashed in DB):
-              </Text>
-              <Text fontSize="xs" color="gray.600" textAlign="center">
+            <Box pt={4} borderTop="1px solid" borderColor="app.border" width="100%">
+              <Text fontSize="xs" color="app.subtleText" textAlign="center">
                 Admin: <strong>admin@foodhub.com</strong> / Admin@FoodHub123
               </Text>
-              <Text fontSize="xs" color="gray.600" textAlign="center" mt={1}>
+              <Text fontSize="xs" color="app.subtleText" textAlign="center" mt={1}>
                 Customer: <strong>customer@foodhub.com</strong> / Customer@FoodHub123
-              </Text>
-              <Text fontSize="xs" color="gray.600" textAlign="center" mt={1}>
-                Historical: <strong>aarav.sharma@example.com</strong> / User@FoodHub123
               </Text>
             </Box>
           </VStack>
