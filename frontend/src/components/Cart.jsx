@@ -51,7 +51,8 @@ const Cart = ({ onOrderPlaced, isDrawer }) => {
       try {
         setLoadingRecs(true);
         const lastItem = cart[cart.length - 1];
-        const response = await searchAPI.getFrequentlyBought(lastItem.id);
+        const cartIds = cart.map((item) => item.id).join(',');
+        const response = await searchAPI.getFrequentlyBought(lastItem.id, cartIds);
         setRecommendations(response.data.data);
       } catch (error) {
         console.error('Failed to load suggestions:', error);

@@ -211,13 +211,25 @@ def get_recommendations():
                         **item.to_dict(),
                         'recommendation_reason': res.get('reason', '')
                     })
+            
+            # Pad to 3 items if needed
+            if len(results) < 3:
+                for item in all_items:
+                    if item.id not in cart_ids and not any(r['id'] == item.id for r in results):
+                        results.append({
+                            **item.to_dict(),
+                            'recommendation_reason': "Popular choice on FoodHub!"
+                        })
+                        if len(results) >= 3:
+                            break
+            
             return jsonify({
                 'success': True,
-                'data': results,
+                'data': results[:3],
                 'llm_powered': True
             }), 200
             
-        # 2. Heuristic fallback (suggest up to 2 items from other categories)
+        # 2. Heuristic fallback (suggest up to 3 items from other categories)
         cart_categories = {item.category for item in cart_items}
         suggestions = []
         
@@ -227,21 +239,23 @@ def get_recommendations():
                     **item.to_dict(),
                     'recommendation_reason': f"Pairs nicely as a delicious {item.category.lower()} choice."
                 })
-                if len(suggestions) >= 2:
+                if len(suggestions) >= 3:
                     break
                     
-        # If still empty (e.g. cart is empty), recommend popular/default choices
-        if not suggestions:
-            for item in all_items[:2]:
-                if item.id not in cart_ids:
+        # Pad with other available items from the same category or general available items if we still need 3
+        if len(suggestions) < 3:
+            for item in all_items:
+                if item.id not in cart_ids and not any(s['id'] == item.id for s in suggestions):
                     suggestions.append({
                         **item.to_dict(),
                         'recommendation_reason': "Popular house choice!"
                     })
+                    if len(suggestions) >= 3:
+                        break
                     
         return jsonify({
             'success': True,
-            'data': suggestions[:2],
+            'data': suggestions[:3],
             'llm_powered': False
         }), 200
         

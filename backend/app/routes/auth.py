@@ -52,11 +52,14 @@ def login_route():
     
     user = User.query.filter_by(email=email).first()
     if not user:
-        return jsonify({'success': False, 'error': 'Invalid credentials'}), 401
+        return jsonify({'success': False, 'error': 'Email is not registered. Please sign up.'}), 401
         
     # Check password and role
-    if not user.check_password(password) or user.role != role:
-        return jsonify({'success': False, 'error': 'Invalid credentials'}), 401
+    if not user.check_password(password):
+        return jsonify({'success': False, 'error': 'Invalid password'}), 401
+        
+    if user.role != role:
+        return jsonify({'success': False, 'error': 'Incorrect role selected for this email'}), 401
         
     return jsonify({
         'success': True,

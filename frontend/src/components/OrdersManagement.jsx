@@ -25,11 +25,17 @@ const OrdersManagement = () => {
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [statusFilter, setStatusFilter] = useState('');
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ordersPerPage = 10;
   const toast = useToast();
 
   useEffect(() => {
     loadOrders();
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filteredOrders.length]);
 
   useEffect(() => {
     if (statusFilter) {
@@ -80,6 +86,15 @@ const OrdersManagement = () => {
     return colors[status] || 'gray';
   };
 
+  const sortedOrders = [...filteredOrders].sort((a, b) => b.id - a.id);
+
+  const totalPages = Math.ceil(sortedOrders.length / ordersPerPage);
+
+  const paginatedOrders = sortedOrders.slice(
+    (currentPage - 1) * ordersPerPage,
+    currentPage * ordersPerPage
+  );
+
   if (loading) {
     return (
       <Center minH="60vh">
@@ -92,29 +107,34 @@ const OrdersManagement = () => {
     <Box>
       <HStack mb={6} justify="space-between" align={{ base: 'start', md: 'center' }} flexWrap="wrap" gap={3}>
         <Box>
-          <Heading size="md">Orders ({filteredOrders.length})</Heading>
-          <Text color="gray.500" fontSize="sm" mt={1}>
+          <Heading size="md" color="app.text">Orders ({filteredOrders.length})</Heading>
+          <Text color="app.subtleText" fontSize="sm" mt={1}>
             Prioritize kitchen flow and keep guests updated.
           </Text>
         </Box>
-        <Select
-          w="200px"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          placeholder="Filter by status"
-        >
-          <option value="">All Statuses</option>
-          <option value="Placed">Placed</option>
-          <option value="Confirmed">Confirmed</option>
-          <option value="Preparing">Preparing</option>
-          <option value="Ready">Ready</option>
-          <option value="Picked Up">Picked Up</option>
-        </Select>
+        <HStack spacing={3} w={{ base: 'full', md: 'auto' }} justify={{ base: 'space-between', md: 'flex-end' }}>
+          <Button colorScheme="orange" onClick={loadOrders} borderRadius="full" shadow="sm" size="sm">
+            Refresh Orders
+          </Button>
+          <Select
+            w="200px"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            placeholder="Filter by status"
+          >
+            <option value="">All Statuses</option>
+            <option value="Placed">Placed</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Preparing">Preparing</option>
+            <option value="Ready">Ready</option>
+            <option value="Picked Up">Picked Up</option>
+          </Select>
+        </HStack>
       </HStack>
 
       <VStack spacing={4}>
-        {filteredOrders.length > 0 ? (
-          filteredOrders.map((order) => (
+        {paginatedOrders.length > 0 ? (
+        paginatedOrders.map((order) => (
             <Card key={order.id} w="full" shadow="soft" border="1px solid" borderColor="app.border" bg="app.surface">
               <CardHeader>
                 <HStack justify="space-between">
@@ -188,11 +208,30 @@ const OrdersManagement = () => {
             <Text color="gray.500">No orders found</Text>
           </Center>
         )}
-      </VStack>
+        {totalPages > 1 && (
+          <HStack pt={4} justify="center" w="full">
+            <Button
+              size="sm"
+              onClick={() => setCurrentPage((p) => p - 1)}
+              isDisabled={currentPage === 1}
+            >
+              Previous
+            </Button>
 
-      <Button mt={6} colorScheme="orange" onClick={loadOrders} borderRadius="full" shadow="sm">
-        Refresh Orders
-      </Button>
+            <Text fontSize="sm">
+              Page {currentPage} of {totalPages}
+            </Text>
+
+            <Button
+              size="sm"
+              onClick={() => setCurrentPage((p) => p + 1)}
+              isDisabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+          </HStack>
+        )}
+      </VStack>
     </Box>
   );
 };

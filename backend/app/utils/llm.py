@@ -74,7 +74,7 @@ def llm_search(query, menu_items):
 
 def llm_recommend(cart_items, menu_items):
     """
-    Use Gemini to suggest up to 2 items based on cart
+    Use Gemini to suggest exactly 3 items based on cart
     """
     if not is_llm_available() or not cart_items:
         return []
@@ -113,7 +113,7 @@ def llm_recommend(cart_items, menu_items):
         {json.dumps(items_data, indent=2)}
         
         Task:
-        1. Suggest up to 2 items from the menu that would pair well with their cart.
+        1. Suggest exactly 3 items from the menu that would pair well with their cart.
         2. Write a brief, friendly, 1-sentence recommendation reason (e.g., "Garlic Bread pairs perfectly with Margherita Pizza").
         
         Return ONLY a JSON array of objects, with no markdown code blocks or other text.
@@ -199,7 +199,7 @@ def rule_based_faq(user_message, menu_items):
     if any(k in message_lower for k in ['hour', 'time', 'open', 'close']):
         return "We are open daily from 11:00 AM to 10:00 PM. We look forward to serving you!"
     if any(k in message_lower for k in ['location', 'where', 'address', 'located']):
-        return "You can find us at 123 Food Street, Gourmet City. Stop by for your pickup!"
+        return "You can find us at 123 Food Street, XYZ City. Stop by for your pickup!"
     if any(k in message_lower for k in ['pickup', 'ready', 'how long', 'prepare']):
         return "Most orders are freshly prepared and ready for pickup within 15 to 30 minutes."
     if any(k in message_lower for k in ['delivery', 'deliver', 'ship']):

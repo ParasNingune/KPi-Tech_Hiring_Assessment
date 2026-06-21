@@ -485,6 +485,13 @@ const Dashboard = () => {
 
   return (
     <Box>
+      <HStack justify="space-between" align="center" mb={6}>
+        <Heading size="md" color="app.text">Analytics Overview</Heading>
+        <Button colorScheme="orange" onClick={loadData} borderRadius="full" shadow="sm" size="sm">
+          Refresh Dashboard
+        </Button>
+      </HStack>
+
       {/* Stats Cards Overview */}
       <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6} mb={8}>
         <Card shadow="soft" border="1px solid" borderColor="app.border" bg="app.surface" borderRadius="2xl">
@@ -540,10 +547,6 @@ const Dashboard = () => {
       <Box mb={8}>
         <PopularItemsChart popularItems={stats.popular_items} />
       </Box>
-
-      <Button colorScheme="orange" onClick={loadData} borderRadius="full" shadow="sm">
-        Refresh Dashboard
-      </Button>
     </Box>
   );
 };

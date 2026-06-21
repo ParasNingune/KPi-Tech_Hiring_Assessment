@@ -35,7 +35,7 @@ export const searchAPI = {
   getSuggestions: () => api.get('/search/suggestions'),
   getRecommendations: (cartIds) => api.get('/search/recommendations', { params: { cart_ids: cartIds } }),
   chatbot: (message) => api.post('/search/chatbot', { message }),
-  getFrequentlyBought: (itemId) => api.get(`/recommendations/frequently-bought/${itemId}`),
+  getFrequentlyBought: (itemId, cartIds = '') => api.get(`/recommendations/frequently-bought/${itemId}`, { params: { cart_ids: cartIds } }),
   getPersonalized: (email) => api.get('/recommendations/personalized', { params: { customer_email: email } }),
 };
 

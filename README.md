@@ -395,7 +395,7 @@ GET /search?q=something spicy and vegetarian
 ## Design Decisions
 
 ### 1. **AI Search & Chatbot Integration**
-**Decision:** Dual-mode execution combining Google's Gemini LLM (`gemini-latest-flash`) with local NLP string-matching fallbacks.
+**Decision:** Dual-mode execution combining Google's Gemini LLM (`gemini-flash-latest`) with local NLP string-matching fallbacks.
 
 **Rationale:**
 - **Semantic Reasoning**: The Gemini model provides natural, semantic search matching (e.g., matching "spicy chicken" with a relevant main course) and explains its choices dynamically to the user.

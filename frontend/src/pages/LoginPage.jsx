@@ -72,16 +72,7 @@ const LoginPage = () => {
       return;
     }
 
-    if (!isPasswordValid) {
-      toast({
-        title: 'Weak Password',
-        description: 'Password must meet all requirements',
-        status: 'error',
-        duration: 3,
-        isClosable: true,
-      });
-      return;
-    }
+
 
     setLoading(true);
     try {
@@ -288,35 +279,12 @@ const LoginPage = () => {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           disabled={loading}
-                          borderColor={password && !isPasswordValid ? 'red.500' : 'app.border'}
+                          borderColor="app.border"
                           borderRadius="lg"
                           bg="app.input"
                           color="app.text"
                           _placeholder={{ color: 'app.faintText' }}
                         />
-                        {password && (
-                          <Box mt={3} p={3} bg="app.mutedSurface" borderRadius="lg" fontSize="sm">
-                            <Text fontWeight="bold" mb={2} color="app.text">Password requirements:</Text>
-                            <VStack align="start" spacing={1} color="app.subtleText">
-                              <HStack spacing={2}>
-                                <Icon as={passwordConstraints.length ? CheckCircleIcon : WarningIcon} color={passwordConstraints.length ? 'green.500' : 'red.500'} />
-                                <Text>At least 8 characters</Text>
-                              </HStack>
-                              <HStack spacing={2}>
-                                <Icon as={passwordConstraints.uppercase ? CheckCircleIcon : WarningIcon} color={passwordConstraints.uppercase ? 'green.500' : 'red.500'} />
-                                <Text>One uppercase letter (A-Z)</Text>
-                              </HStack>
-                              <HStack spacing={2}>
-                                <Icon as={passwordConstraints.lowercase ? CheckCircleIcon : WarningIcon} color={passwordConstraints.lowercase ? 'green.500' : 'red.500'} />
-                                <Text>One lowercase letter (a-z)</Text>
-                              </HStack>
-                              <HStack spacing={2}>
-                                <Icon as={passwordConstraints.symbol ? CheckCircleIcon : WarningIcon} color={passwordConstraints.symbol ? 'green.500' : 'red.500'} />
-                                <Text>One symbol (!@#$%^&* etc)</Text>
-                              </HStack>
-                            </VStack>
-                          </Box>
-                        )}
                       </FormControl>
 
                       <Button
@@ -326,7 +294,7 @@ const LoginPage = () => {
                         isLoading={loading}
                         size="lg"
                         borderRadius="xl"
-                        isDisabled={!isPasswordValid || !email || !password}
+                        isDisabled={!email || !password}
                       >
                         Login
                       </Button>

@@ -30,8 +30,8 @@ class Order(db.Model):
             'total_price': self.total_price,
             'special_instructions': self.special_instructions,
             'items': [item.to_dict() for item in self.items],
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 
 

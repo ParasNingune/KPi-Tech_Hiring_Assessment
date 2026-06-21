@@ -6,10 +6,14 @@ from sqlalchemy import func
 
 recommendations_bp = Blueprint('recommendations', __name__)
 
-def get_popular_items(limit=3):
+def get_popular_items(limit=10):
     popular = db.session.query(
         OrderItem.menu_item_id,
         func.count(OrderItem.id).label('sales_count')
+    ).join(
+        MenuItem, OrderItem.menu_item_id == MenuItem.id
+    ).filter(
+        MenuItem.available == True
     ).group_by(
         OrderItem.menu_item_id
     ).order_by(
@@ -19,13 +23,21 @@ def get_popular_items(limit=3):
 
 @recommendations_bp.route('/frequently-bought/<int:item_id>', methods=['GET'])
 def get_frequently_bought_together(item_id):
-    limit = request.args.get('limit', default=2, type=int)
+    limit = request.args.get('limit', default=3, type=int)
+    cart_ids_str = request.args.get('cart_ids', '').strip()
     
     # Verify item exists
     item = MenuItem.query.get(item_id)
     if not item:
         return jsonify({'success': False, 'error': 'Item not found'}), 404
         
+    exclude_ids = {item_id}
+    if cart_ids_str:
+        try:
+            exclude_ids.update(int(x) for x in cart_ids_str.split(',') if x.strip().isdigit())
+        except ValueError:
+            pass
+
     # Get all order IDs containing this item_id
     subquery = db.session.query(OrderItem.order_id).filter(OrderItem.menu_item_id == item_id).subquery()
     
@@ -33,10 +45,14 @@ def get_frequently_bought_together(item_id):
     frequent = db.session.query(
         OrderItem.menu_item_id,
         func.count(OrderItem.id).label('frequency')
+    ).join(
+        MenuItem, OrderItem.menu_item_id == MenuItem.id
     ).filter(
         OrderItem.order_id.in_(subquery)
     ).filter(
-        OrderItem.menu_item_id != item_id
+        MenuItem.available == True
+    ).filter(
+        ~OrderItem.menu_item_id.in_(exclude_ids)
     ).group_by(
         OrderItem.menu_item_id
     ).order_by(
@@ -47,13 +63,22 @@ def get_frequently_bought_together(item_id):
     
     # Fallback to popular items
     if len(frequent_ids) < limit:
-        popular_ids = get_popular_items(limit * 2)
+        popular_ids = get_popular_items(limit * 3)
         for pid in popular_ids:
-            if pid != item_id and pid not in frequent_ids:
+            if pid not in exclude_ids and pid not in frequent_ids:
                 frequent_ids.append(pid)
                 if len(frequent_ids) >= limit:
                     break
                     
+    # If still not enough, fallback to any available menu items
+    if len(frequent_ids) < limit:
+        remaining_limit = limit - len(frequent_ids)
+        any_items = MenuItem.query.filter_by(available=True).filter(~MenuItem.id.in_(exclude_ids | set(frequent_ids))).limit(remaining_limit).all()
+        for i in any_items:
+            frequent_ids.append(i.id)
+            if len(frequent_ids) >= limit:
+                break
+                
     results = []
     if frequent_ids:
         # Load the menu items
