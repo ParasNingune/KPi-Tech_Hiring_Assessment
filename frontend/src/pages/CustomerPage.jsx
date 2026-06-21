@@ -267,7 +267,7 @@ const CustomerPage = () => {
               </Text>
               <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
                 {personalizedRecs.map((item) => (
-                  <MenuItemCard key={item.id} item={item} />
+                  <MenuItemCard key={item.id} item={item} compact={true} />
                 ))}
               </SimpleGrid>
             </Box>

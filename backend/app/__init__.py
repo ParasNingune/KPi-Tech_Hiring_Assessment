@@ -20,18 +20,31 @@ def create_app():
     from app.routes.menu import menu_bp
     from app.routes.orders import orders_bp
     from app.routes.search import search_bp
+    from app.routes.auth import auth_bp
+    from app.routes.recommendations import recommendations_bp
     
     app.register_blueprint(menu_bp, url_prefix='/api/menu')
     app.register_blueprint(orders_bp, url_prefix='/api/orders')
     app.register_blueprint(search_bp, url_prefix='/api/search')
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(recommendations_bp, url_prefix='/api/recommendations')
     
     # Create tables
     with app.app_context():
-        db.create_all()
+        # Import models so SQLAlchemy registers them before create_all
+        from app.models.user import User
         from app.models.menu import MenuItem
+        from app.models.order import Order, OrderItem
+        
+        db.create_all()
+        
         # Seed initial data if empty
         if MenuItem.query.count() == 0:
             _seed_initial_data()
+            
+        # Seed user credentials if empty
+        if User.query.count() == 0:
+            _seed_users_data()
     
     return app
 
@@ -189,3 +202,24 @@ def _seed_initial_data():
             db.session.add(order_item)
 
     db.session.commit()
+
+
+def _seed_users_data():
+    """Seed database with initial customer and admin credentials"""
+    from app.models.user import User
+    
+    users = [
+        {"email": "admin@foodhub.com", "password": "Admin@FoodHub123", "role": "admin"},
+        {"email": "customer@foodhub.com", "password": "Customer@FoodHub123", "role": "customer"},
+        {"email": "aarav.sharma@example.com", "password": "User@FoodHub123", "role": "customer"},
+        {"email": "priya.patel@example.com", "password": "User@FoodHub123", "role": "customer"},
+        {"email": "rohan.das@example.com", "password": "User@FoodHub123", "role": "customer"},
+        {"email": "ananya.sen@example.com", "password": "User@FoodHub123", "role": "customer"},
+    ]
+    
+    for u in users:
+        user = User(email=u["email"].lower().strip(), role=u["role"])
+        user.set_password(u["password"])
+        db.session.add(user)
+    db.session.commit()
+

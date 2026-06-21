@@ -177,6 +177,45 @@ def get_admin_stats():
         ).join(OrderItem, MenuItem.id == OrderItem.menu_item_id).group_by(MenuItem.id).order_by(func.count(OrderItem.id).desc()).limit(5).all()
         
         popular_items_list = [{'name': item[0], 'count': item[1]} for item in popular_items]
+
+        # Frequently bought together pairs query
+        from sqlalchemy.orm import aliased
+        oi1 = aliased(OrderItem)
+        oi2 = aliased(OrderItem)
+        m1 = aliased(MenuItem)
+        m2 = aliased(MenuItem)
+        
+        frequent_pairs = db.session.query(
+            m1.name,
+            m2.name,
+            func.count(oi1.id).label('pair_count')
+        ).join(
+            oi1, m1.id == oi1.menu_item_id
+        ).join(
+            oi2, oi1.order_id == oi2.order_id
+        ).join(
+            m2, m2.id == oi2.menu_item_id
+        ).filter(
+            oi1.menu_item_id < oi2.menu_item_id
+        ).group_by(
+            oi1.menu_item_id, oi2.menu_item_id
+        ).order_by(
+            func.count(oi1.id).desc()
+        ).limit(5).all()
+        
+        frequent_pairs_list = [{'item1': item[0], 'item2': item[1], 'count': item[2]} for item in frequent_pairs]
+
+        # Revenue by Category query
+        category_revenue = db.session.query(
+            MenuItem.category,
+            func.sum(OrderItem.quantity * OrderItem.price).label('revenue')
+        ).join(
+            OrderItem, MenuItem.id == OrderItem.menu_item_id
+        ).group_by(
+            MenuItem.category
+        ).all()
+        
+        category_revenue_list = [{'category': item[0], 'revenue': float(item[1] or 0)} for item in category_revenue]
         
         # 7-day revenue trend directly from the database
         revenue_trend = []
@@ -202,7 +241,9 @@ def get_admin_stats():
                 'today_revenue': today_revenue,
                 'today_orders': len(today_orders),
                 'popular_items': popular_items_list,
-                'revenue_trend': revenue_trend
+                'revenue_trend': revenue_trend,
+                'frequent_pairs': frequent_pairs_list,
+                'category_revenue': category_revenue_list
             }
         }), 200
     

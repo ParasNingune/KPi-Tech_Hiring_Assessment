@@ -1,6 +1,6 @@
 import os
 import json
-from google import genai
+import google.generativeai as genai
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -59,7 +59,7 @@ def llm_search(query, menu_items):
             prompt,
             generation_config={"response_mime_type": "application/json"}
         )
-        
+        print("LLM generated content")
         text = response.text.strip()
         # Clean potential markdown wrapping
         if text.startswith("```json"):

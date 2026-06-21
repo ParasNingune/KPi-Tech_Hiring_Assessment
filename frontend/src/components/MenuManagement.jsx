@@ -34,6 +34,8 @@ import {
   Center,
   IconButton,
   SimpleGrid,
+  Switch,
+  Badge,
 } from '@chakra-ui/react';
 import { DeleteIcon, EditIcon } from '@chakra-ui/icons';
 import { menuAPI } from '../utils/api';
@@ -62,8 +64,9 @@ const MenuManagement = () => {
   const loadItems = async () => {
     try {
       setLoading(true);
-      const response = await menuAPI.getAll();
-      setItems(response.data.data);
+      const response = await menuAPI.getAll(undefined, true);
+      const sortedItems = [...response.data.data].sort((a, b) => Number(b.available) - Number(a.available));
+      setItems(sortedItems);
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to load menu items', status: 'error' });
     } finally {
@@ -206,18 +209,61 @@ const MenuManagement = () => {
                   <Text fontSize="sm" fontWeight="bold" color="brand.500">
                     ₹{item.price.toFixed(2)}
                   </Text>
-                  <Tag size="sm">{item.category}</Tag>
+                  <Tag size="sm" variant="outline" colorScheme="orange">{item.category}</Tag>
                 </HStack>
-                <HStack spacing={1} flexWrap="wrap">
+                <HStack spacing={2} flexWrap="wrap" mt={1}>
                   {item.dietary_tags.map((tag) => (
-                    <Tag key={tag} size="xs" colorScheme="green" variant="subtle">
+                    <Badge
+                      key={tag}
+                      colorScheme="green"
+                      variant="subtle"
+                      borderRadius="full"
+                      px={2.5}
+                      py={0.5}
+                      fontSize="10px"
+                      textTransform="capitalize"
+                    >
                       {tag}
-                    </Tag>
+                    </Badge>
                   ))}
                 </HStack>
-                <Tag colorScheme={item.available ? 'green' : 'red'} size="sm">
-                  {item.available ? 'Available' : 'Out of Stock'}
-                </Tag>
+                <HStack w="full" justify="space-between" align="center" mt={2} pt={2} borderTop="1px solid" borderColor="app.border">
+                  <Text fontSize="xs" fontWeight="semibold" color={item.available ? 'green.600' : 'red.500'}>
+                    {item.available ? 'Available' : 'Unavailable'}
+                  </Text>
+                  <Switch
+                    colorScheme="orange"
+                    size="sm"
+                    isChecked={item.available}
+                    onChange={async (e) => {
+                      try {
+                        const updatedData = {
+                          name: item.name,
+                          description: item.description,
+                          category: item.category,
+                          price: item.price,
+                          dietary_tags: item.dietary_tags,
+                          available: e.target.checked
+                        };
+                        await menuAPI.update(item.id, updatedData);
+                        toast({
+                          title: 'Availability updated',
+                          description: `${item.name} is now ${e.target.checked ? 'Available' : 'Unavailable'}`,
+                          status: 'success',
+                          duration: 2,
+                        });
+                        loadItems();
+                      } catch (err) {
+                        toast({
+                          title: 'Error',
+                          description: 'Failed to update availability status',
+                          status: 'error',
+                          duration: 2,
+                        });
+                      }
+                    }}
+                  />
+                </HStack>
               </VStack>
             </CardBody>
           </Card>
@@ -280,10 +326,14 @@ const MenuManagement = () => {
                 </CheckboxGroup>
               </FormControl>
 
-              <FormControl>
-                <Checkbox name="available" isChecked={formData.available} onChange={handleInputChange}>
-                  Available
-                </Checkbox>
+              <FormControl display="flex" alignItems="center" justifyContent="space-between">
+                <FormLabel mb="0">Available</FormLabel>
+                <Switch
+                  name="available"
+                  colorScheme="orange"
+                  isChecked={formData.available}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, available: e.target.checked }))}
+                />
               </FormControl>
             </VStack>
           </ModalBody>

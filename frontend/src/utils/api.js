@@ -11,7 +11,7 @@ const api = axios.create({
 
 // Menu endpoints
 export const menuAPI = {
-  getAll: (category) => api.get('/menu', { params: { category } }),
+  getAll: (category, showAll = false) => api.get('/menu', { params: { category, all: showAll } }),
   getById: (id) => api.get(`/menu/${id}`),
   getCategories: () => api.get('/menu/categories'),
   create: (data) => api.post('/menu', data),
@@ -37,6 +37,12 @@ export const searchAPI = {
   chatbot: (message) => api.post('/search/chatbot', { message }),
   getFrequentlyBought: (itemId) => api.get(`/recommendations/frequently-bought/${itemId}`),
   getPersonalized: (email) => api.get('/recommendations/personalized', { params: { customer_email: email } }),
+};
+
+// Auth endpoints
+export const authAPI = {
+  login: (email, password, role) => api.post('/auth/login', { email, password, role }),
+  signup: (email, password, role) => api.post('/auth/signup', { email, password, role }),
 };
 
 export default api;

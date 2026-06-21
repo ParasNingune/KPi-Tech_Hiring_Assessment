@@ -120,15 +120,15 @@ const OrdersManagement = () => {
                 <HStack justify="space-between">
                   <VStack align="start" spacing={1}>
                     <Heading size="sm">Order #{order.id}</Heading>
-                    <Text fontSize="xs" color="gray.600">
+                    <Text fontSize="xs">
                       {order.customer_name} • {order.customer_email}
                     </Text>
-                    <Text fontSize="xs" color="gray.600">
+                    <Text fontSize="xs">
                       {new Date(order.created_at).toLocaleString()}
                     </Text>
                   </VStack>
                   <VStack align="end" spacing={2}>
-                    <Heading size="sm" color="brand.500">
+                    <Heading size="sm" color="green">
                       ₹{order.total_price.toFixed(2)}
                     </Heading>
                     <Tag colorScheme={getStatusColor(order.status)}>{order.status}</Tag>

@@ -24,6 +24,7 @@ import {
 } from '@chakra-ui/react';
 import { CheckCircleIcon, WarningIcon } from '@chakra-ui/icons';
 import { useAuth } from '../utils/AuthContext';
+import { authAPI } from '../utils/api';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -75,8 +76,8 @@ const LoginPage = () => {
 
     setLoading(true);
     try {
-      // Simulate login - in production, this would validate against a backend
-      login(email, role);
+      const response = await authAPI.login(email, password, role);
+      login(response.data.data.email, response.data.data.role);
       toast({
         title: 'Success',
         description: `Logged in as ${role}`,
@@ -85,9 +86,10 @@ const LoginPage = () => {
         isClosable: true,
       });
     } catch (error) {
+      const errorMsg = error.response?.data?.error || 'Login failed';
       toast({
         title: 'Error',
-        description: 'Login failed',
+        description: errorMsg,
         status: 'error',
         duration: 3,
         isClosable: true,
@@ -135,8 +137,8 @@ const LoginPage = () => {
 
     setLoading(true);
     try {
-      // Simulate signup - in production, this would validate and save to backend
-      login(email, role);
+      const response = await authAPI.signup(email, password, role);
+      login(response.data.data.email, response.data.data.role);
       toast({
         title: 'Success',
         description: 'Account created and logged in!',
@@ -145,9 +147,10 @@ const LoginPage = () => {
         isClosable: true,
       });
     } catch (error) {
+      const errorMsg = error.response?.data?.error || 'Signup failed';
       toast({
         title: 'Error',
-        description: 'Signup failed',
+        description: errorMsg,
         status: 'error',
         duration: 3,
         isClosable: true,
@@ -398,11 +401,17 @@ const LoginPage = () => {
             </Tabs>
 
             <Box pt={4} borderTop="1px solid" borderColor="gray.200" width="100%">
-              <Text fontSize="xs" color="gray.500" textAlign="center" mb={2}>
-                Demo credentials - Email: any email, Password: Demo!123
+              <Text fontSize="xs" color="gray.500" textAlign="center" mb={2} fontWeight="bold">
+                Seeded Accounts (Passwords are stored hashed in DB):
               </Text>
-              <Text fontSize="xs" color="gray.500" textAlign="center">
-                Or create a new account with strong password
+              <Text fontSize="xs" color="gray.600" textAlign="center">
+                Admin: <strong>admin@foodhub.com</strong> / Admin@FoodHub123
+              </Text>
+              <Text fontSize="xs" color="gray.600" textAlign="center" mt={1}>
+                Customer: <strong>customer@foodhub.com</strong> / Customer@FoodHub123
+              </Text>
+              <Text fontSize="xs" color="gray.600" textAlign="center" mt={1}>
+                Historical: <strong>aarav.sharma@example.com</strong> / User@FoodHub123
               </Text>
             </Box>
           </VStack>

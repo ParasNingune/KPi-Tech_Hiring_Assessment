@@ -4,13 +4,17 @@ from app.models.menu import MenuItem
 
 menu_bp = Blueprint('menu', __name__)
 
-# Get all menu items (Customer view - browse by category)
+# Get all menu items (Customer view - browse by category; Admin view - all=true)
 @menu_bp.route('/', methods=['GET'])
 def get_all_items():
-    """Get all available menu items, optionally filtered by category"""
+    """Get menu items, optionally filtered by category and availability"""
     category = request.args.get('category')
+    show_all = request.args.get('all', 'false').lower() == 'true'
     
-    query = MenuItem.query.filter_by(available=True)
+    if show_all:
+        query = MenuItem.query
+    else:
+        query = MenuItem.query.filter_by(available=True)
     
     if category:
         query = query.filter_by(category=category)

@@ -24,7 +24,7 @@ import { orderAPI } from '../utils/api';
 // 1. Revenue Trend Area Chart (SVG)
 const RevenueTrendChart = ({ trendData }) => {
   const width = 500;
-  const height = 220;
+  const height = 200;
   const paddingX = 50;
   const paddingY = 30;
 
@@ -131,71 +131,120 @@ const RevenueTrendChart = ({ trendData }) => {
   );
 };
 
-// 2. Orders by Status Chart
+// 2. Orders by Status Chart (SVG Pie Chart)
 const OrdersByStatusChart = ({ statusBreakdown }) => {
-  const entries = Object.entries(statusBreakdown);
-  const total = entries.reduce((sum, [_, count]) => sum + count, 0);
+  const entries = Object.entries(statusBreakdown).filter(([_, count]) => count > 0);
+  const total = Object.values(statusBreakdown).reduce((sum, count) => sum + count, 0);
 
   const getStatusColor = (status) => {
     const colors = {
-      Placed: 'blue.500',
-      Confirmed: 'cyan.500',
-      Preparing: 'orange.500',
-      Ready: 'green.500',
-      'Picked Up': 'purple.500',
+      Placed: '#3182ce',      // blue.500
+      Confirmed: '#00b5d8',   // cyan.500
+      Preparing: '#dd6b20',   // orange.500
+      Ready: '#38a169',       // green.500
+      'Picked Up': '#805ad5', // purple.500
     };
-    return colors[status] || 'gray.500';
+    return colors[status] || '#718096';
   };
+
+  const getStatusColorClass = (status) => {
+    const colors = {
+      Placed: 'blue',
+      Confirmed: 'cyan',
+      Preparing: 'orange',
+      Ready: 'green',
+      'Picked Up': 'purple',
+    };
+    return colors[status] || 'gray';
+  };
+
+  if (total === 0) {
+    return (
+      <Card shadow="soft" border="1px solid" borderColor="app.border" bg="app.surface" p={5} borderRadius="2xl">
+        <Heading size="sm" mb={4} color="app.text">Orders by Status</Heading>
+        <Center py={10}>
+          <Text color="app.faintText">No order data available yet</Text>
+        </Center>
+      </Card>
+    );
+  }
+
+  const cx = 100;
+  const cy = 100;
+  const r = 75;
+
+  let accumulatedAngle = -Math.PI / 2; // Start from top (12 o'clock)
+
+  const slices = entries.map(([status, count]) => {
+    const percentage = (count / total) * 100;
+    const angle = (count / total) * 2 * Math.PI;
+    const startAngle = accumulatedAngle;
+    const endAngle = accumulatedAngle + angle;
+    accumulatedAngle = endAngle;
+
+    const x1 = cx + r * Math.cos(startAngle);
+    const y1 = cy + r * Math.sin(startAngle);
+    const x2 = cx + r * Math.cos(endAngle);
+    const y2 = cy + r * Math.sin(endAngle);
+
+    const largeArcFlag = angle > Math.PI ? 1 : 0;
+
+    const pathData = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
+
+    return {
+      status,
+      count,
+      percentage,
+      pathData,
+      color: getStatusColor(status),
+      colorClass: getStatusColorClass(status)
+    };
+  });
 
   return (
     <Card shadow="soft" border="1px solid" borderColor="app.border" bg="app.surface" p={5} borderRadius="2xl">
       <Heading size="sm" mb={4} color="app.text">Orders by Status</Heading>
-      <VStack align="stretch" spacing={3}>
-        {entries.map(([status, count]) => {
-          const percentage = total > 0 ? (count / total) * 100 : 0;
-          return (
-            <Box key={status}>
-              <HStack justify="space-between" mb={1}>
-                <Text fontSize="sm" fontWeight="semibold" color="app.text">{status}</Text>
-                <HStack spacing={2}>
-                  <Text fontSize="xs" color="app.faintText">
-                    {total > 0 ? `${Math.round(percentage)}%` : '0%'}
-                  </Text>
-                  <Badge
-                    colorScheme={
-                      status === 'Picked Up' ? 'purple' :
-                      status === 'Ready' ? 'green' :
-                      status === 'Preparing' ? 'orange' :
-                      status === 'Confirmed' ? 'cyan' : 'blue'
-                    }
-                    borderRadius="full"
-                    px={2}
-                  >
-                    {count}
-                  </Badge>
-                </HStack>
-              </HStack>
-              <Box
-                w="full"
-                h="10px"
-                bg="app.mutedSurface"
-                borderRadius="full"
-                overflow="hidden"
-                border="1px solid"
-                borderColor="app.border"
+      <Stack direction={{ base: 'column', sm: 'row' }} spacing={8} align="center" justify="center" px={2}>
+        <Box w="190px" h="190px" flexShrink={0}>
+          <svg viewBox="0 0 200 200" width="100%" height="100%">
+            {slices.map((slice, idx) => (
+              <path
+                key={idx}
+                d={slice.pathData}
+                fill={slice.color}
+                stroke="var(--chakra-colors-app-surface)"
+                strokeWidth={2}
+                style={{
+                  transition: 'all 0.3s ease',
+                  cursor: 'pointer'
+                }}
               >
-                <Box
-                  h="full"
-                  w={`${percentage}%`}
-                  bg={getStatusColor(status)}
-                  borderRadius="full"
-                  transition="width 0.8s ease-in-out"
-                />
-              </Box>
-            </Box>
-          );
-        })}
-      </VStack>
+                <title>{`${slice.status}: ${slice.count} (${Math.round(slice.percentage)}%)`}</title>
+              </path>
+            ))}
+          </svg>
+        </Box>
+        <VStack align="start" spacing={2.5} flex={1} w="full">
+          {slices.map((slice, idx) => (
+            <HStack key={idx} spacing={2} w="full" justify="space-between">
+              <HStack spacing={2}>
+                <Box w={3} h={3} borderRadius="full" bg={slice.color} />
+                <Text fontSize="sm" fontWeight="semibold" color="app.text">
+                  {slice.status}
+                </Text>
+              </HStack>
+              <HStack spacing={2}>
+                <Text fontSize="xs" color="app.faintText">
+                  {Math.round(slice.percentage)}%
+                </Text>
+                <Badge colorScheme={slice.colorClass} borderRadius="full" px={2}>
+                  {slice.count}
+                </Badge>
+              </HStack>
+            </HStack>
+          ))}
+        </VStack>
+      </Stack>
     </Card>
   );
 };
@@ -249,7 +298,159 @@ const PopularItemsChart = ({ popularItems }) => {
   );
 };
 
+// 4. Category Revenue Chart (Donut Chart)
+const CategoryRevenueChart = ({ categoryRevenue }) => {
+  const entries = categoryRevenue.filter(d => d.revenue > 0);
+  const total = entries.reduce((sum, d) => sum + d.revenue, 0);
+
+  const getCategoryColor = (category) => {
+    const colors = {
+      Appetizers: '#ed8936',      // orange.400
+      'Main Courses': '#48bb78',  // green.400
+      Desserts: '#ed64a6',       // pink.400
+      Beverages: '#4299e1',      // blue.400
+    };
+    return colors[category] || '#a0aec0';
+  };
+
+  const getCategoryColorClass = (category) => {
+    const colors = {
+      Appetizers: 'orange',
+      'Main Courses': 'green',
+      Desserts: 'pink',
+      Beverages: 'blue',
+    };
+    return colors[category] || 'gray';
+  };
+
+  if (total === 0) {
+    return (
+      <Card shadow="soft" border="1px solid" borderColor="app.border" bg="app.surface" p={5} borderRadius="2xl">
+        <Heading size="sm" mb={4} color="app.text">Revenue by Category</Heading>
+        <Center py={10}>
+          <Text color="app.faintText">No category sales data available yet</Text>
+        </Center>
+      </Card>
+    );
+  }
+
+  const cx = 100;
+  const cy = 100;
+  const r = 75;
+
+  let accumulatedAngle = -Math.PI / 2;
+
+  const slices = entries.map((d) => {
+    const percentage = (d.revenue / total) * 100;
+    const angle = (d.revenue / total) * 2 * Math.PI;
+    const startAngle = accumulatedAngle;
+    const endAngle = accumulatedAngle + angle;
+    accumulatedAngle = endAngle;
+
+    const x1 = cx + r * Math.cos(startAngle);
+    const y1 = cy + r * Math.sin(startAngle);
+    const x2 = cx + r * Math.cos(endAngle);
+    const y2 = cy + r * Math.sin(endAngle);
+
+    const largeArcFlag = angle > Math.PI ? 1 : 0;
+
+    const pathData = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
+
+    return {
+      category: d.category,
+      revenue: d.revenue,
+      percentage,
+      pathData,
+      color: getCategoryColor(d.category),
+      colorClass: getCategoryColorClass(d.category)
+    };
+  });
+
+  return (
+    <Card shadow="soft" border="1px solid" borderColor="app.border" bg="app.surface" p={5} borderRadius="2xl">
+      <Heading size="sm" mb={4} color="app.text">Revenue by Category</Heading>
+      <Stack direction={{ base: 'column', sm: 'row' }} spacing={8} align="center" justify="center" px={2}>
+        <Box w="190px" h="190px" flexShrink={0} position="relative">
+          <svg viewBox="0 0 200 200" width="100%" height="100%">
+            {slices.map((slice, idx) => (
+              <path
+                key={idx}
+                d={slice.pathData}
+                fill={slice.color}
+                stroke="var(--chakra-colors-app-surface)"
+                strokeWidth={2}
+                style={{
+                  transition: 'all 0.3s ease',
+                  cursor: 'pointer'
+                }}
+              >
+                <title>{`${slice.category}: ₹${slice.revenue.toFixed(2)} (${Math.round(slice.percentage)}%)`}</title>
+              </path>
+            ))}
+            {/* Donut Hole */}
+            <circle cx={cx} cy={cy} r={40} fill="var(--chakra-colors-app-surface)" />
+          </svg>
+        </Box>
+        <VStack align="start" spacing={2.5} flex={1} w="full">
+          {slices.map((slice, idx) => (
+            <HStack key={idx} spacing={2} w="full" justify="space-between">
+              <HStack spacing={2}>
+                <Box w={3} h={3} borderRadius="full" bg={slice.color} />
+                <Text fontSize="sm" fontWeight="semibold" color="app.text">
+                  {slice.category}
+                </Text>
+              </HStack>
+              <HStack spacing={2}>
+                <Text fontSize="xs" color="app.faintText">
+                  {Math.round(slice.percentage)}%
+                </Text>
+                <Badge colorScheme={slice.colorClass} borderRadius="full" px={2}>
+                  ₹{slice.revenue.toFixed(0)}
+                </Badge>
+              </HStack>
+            </HStack>
+          ))}
+        </VStack>
+      </Stack>
+    </Card>
+  );
+};
+
+// 5. Frequently Bought Together Pairs List
+const FrequentPairsList = ({ frequentPairs }) => {
+  return (
+    <Card shadow="soft" border="1px solid" borderColor="app.border" bg="app.surface" p={5} borderRadius="2xl">
+      <Heading size="sm" mb={4} color="app.text">Frequently Bought Together Pairs</Heading>
+      <VStack align="stretch" spacing={3}>
+        {frequentPairs.length > 0 ? (
+          frequentPairs.map((pair, idx) => (
+            <HStack key={idx} justify="space-between" p={3} bg="app.mutedSurface" borderRadius="xl" border="1px solid" borderColor="app.border">
+              <HStack spacing={2} wrap="wrap">
+                <Badge colorScheme="orange" borderRadius="lg" px={2} py={0.5} fontSize="xs">
+                  {pair.item1}
+                </Badge>
+                <Text fontSize="xs" fontWeight="bold" color="app.faintText">+</Text>
+                <Badge colorScheme="blue" borderRadius="lg" px={2} py={0.5} fontSize="xs">
+                  {pair.item2}
+                </Badge>
+              </HStack>
+              <Badge colorScheme="green" borderRadius="full" px={2.5}>
+                {pair.count} times
+              </Badge>
+            </HStack>
+          ))
+        ) : (
+          <Center py={8}>
+            <Text color="app.faintText">No pairing data available yet</Text>
+          </Center>
+        )}
+      </VStack>
+    </Card>
+  );
+};
+
 const Dashboard = () => {
+
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const toast = useToast();
@@ -323,16 +524,22 @@ const Dashboard = () => {
         </Card>
       </SimpleGrid>
 
-      {/* Revenue Trend Area Chart */}
-      <Box mb={8}>
+      {/* Charts Grid */}
+      <Grid templateColumns={{ base: '1fr', lg: '1.7fr 1.3fr' }} gap={6} mb={8} alignItems="stretch">
         <RevenueTrendChart trendData={stats.revenue_trend} />
-      </Box>
-
-      {/* Status & Popularity Breakdown Charts */}
-      <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={6} mb={8}>
         <OrdersByStatusChart statusBreakdown={stats.orders_by_status} />
-        <PopularItemsChart popularItems={stats.popular_items} />
       </Grid>
+
+      {/* Analytics Breakdown Grid */}
+      <Grid templateColumns={{ base: '1fr', lg: '1.3fr 1.7fr' }} gap={6} mb={8} alignItems="stretch">
+        <CategoryRevenueChart categoryRevenue={stats.category_revenue || []} />
+        <FrequentPairsList frequentPairs={stats.frequent_pairs || []} />
+      </Grid>
+
+      {/* Popularity Breakdown Chart */}
+      <Box mb={8}>
+        <PopularItemsChart popularItems={stats.popular_items} />
+      </Box>
 
       <Button colorScheme="orange" onClick={loadData} borderRadius="full" shadow="sm">
         Refresh Dashboard

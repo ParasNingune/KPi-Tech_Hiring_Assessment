@@ -36,7 +36,7 @@ const categoryImages = {
   Beverages: 'https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=900&q=80',
 };
 
-const MenuItemCard = ({ item }) => {
+const MenuItemCard = ({ item, compact = false }) => {
   const { addItem } = useCart();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [quantity, setQuantity] = React.useState(1);
@@ -73,8 +73,9 @@ const MenuItemCard = ({ item }) => {
         border="1px solid"
         borderColor="app.border"
         bg="app.surface"
+        size={compact ? "sm" : "md"}
       >
-        <Box h="158px" bgGradient="linear(to-br, orange.300, red.400)" position="relative">
+        <Box h={compact ? "95px" : "158px"} bgGradient="linear(to-br, orange.300, red.400)" position="relative">
           <Image
             src={categoryImages[item.category]}
             alt={item.category}
@@ -84,39 +85,39 @@ const MenuItemCard = ({ item }) => {
             fallback={<Box w="full" h="full" bgGradient="linear(to-br, orange.300, red.400)" />}
           />
           <Box position="absolute" inset={0} bgGradient="linear(to-t, blackAlpha.700, transparent 58%)" />
-          <Box position="absolute" bottom={3} left={4} right={4}>
+          <Box position="absolute" bottom={compact ? 2 : 3} left={compact ? 3 : 4} right={compact ? 3 : 4}>
             <HStack justify="space-between" align="center">
-              <Badge bg="whiteAlpha.900" color="gray.800" px={2} borderRadius="full">
+              <Badge bg="whiteAlpha.900" color="gray.800" px={2} borderRadius="full" fontSize={compact ? "9px" : "xs"}>
                 {item.category}
               </Badge>
-              {!item.available && <Tag colorScheme="red">Out of Stock</Tag>}
+              {!item.available && <Tag colorScheme="red" size={compact ? "sm" : "md"}>Out of Stock</Tag>}
             </HStack>
           </Box>
         </Box>
-        <CardHeader pb={3}>
-          <HStack justify="space-between" align="start" mb={2}>
+        <CardHeader pb={compact ? 1 : 3} pt={compact ? 3 : 5} px={compact ? 3 : 5}>
+          <HStack justify="space-between" align="start" mb={compact ? 0 : 2}>
             <VStack align="start" spacing={1} flex={1}>
-              <Heading size="sm">{item.name}</Heading>
-              <Text fontSize="xs" color="app.subtleText" noOfLines={2}>
+              <Heading size={compact ? "xs" : "sm"}>{item.name}</Heading>
+              <Text fontSize="xs" color="app.subtleText" noOfLines={compact ? 1 : 2}>
                 {item.description}
               </Text>
             </VStack>
           </HStack>
         </CardHeader>
 
-        <CardBody>
-          <VStack align="start" spacing={3}>
+        <CardBody pt={0} pb={compact ? 3 : 5} px={compact ? 3 : 5}>
+          <VStack align="start" spacing={compact ? 2 : 3}>
             {item.dietary_tags && item.dietary_tags.length > 0 && (
-              <HStack spacing={2}>
+              <HStack spacing={2} wrap="wrap">
                 {item.dietary_tags.map((tag) => (
-                  <Tag key={tag} size="sm" colorScheme="green" variant="subtle" borderRadius="full">
+                  <Tag key={tag} size="sm" colorScheme="green" variant="subtle" borderRadius="full" fontSize={compact ? "9px" : "xs"} px={2} py={0.5}>
                     {tag}
                   </Tag>
                 ))}
               </HStack>
             )}
 
-            {item.match_reason && (
+            {item.match_reason && !compact && (
               <Box p={2.5} bg="app.accentWash" borderRadius="xl" mt={2} border="1px solid" borderColor="app.border" w="full">
                 <Text fontSize="xs" color="brand.600" fontStyle="italic">
                   ✨ AI Match: {item.match_reason}
@@ -124,12 +125,12 @@ const MenuItemCard = ({ item }) => {
               </Box>
             )}
 
-            <HStack justify="space-between" w="full" pt={2} borderTop="1px solid" borderColor="app.border">
-              <Heading size="md" color="brand.500">
+            <HStack justify="space-between" w="full" pt={compact ? 1.5 : 2} borderTop="1px solid" borderColor="app.border">
+              <Heading size={compact ? "sm" : "md"} color="brand.500">
                 ₹{item.price.toFixed(2)}
               </Heading>
               <Button
-                size="sm"
+                size={compact ? "xs" : "sm"}
                 colorScheme="orange"
                 isDisabled={!item.available}
                 borderRadius="full"
@@ -139,7 +140,7 @@ const MenuItemCard = ({ item }) => {
                   onOpen();
                 }}
               >
-                <AddIcon mr={1} /> Add
+                <AddIcon mr={1} w={compact ? "8px" : "10px"} h={compact ? "8px" : "10px"} /> Add
               </Button>
             </HStack>
           </VStack>
