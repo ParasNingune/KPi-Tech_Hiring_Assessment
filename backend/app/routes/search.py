@@ -81,33 +81,7 @@ def search_menu():
         # Get all available items
         all_items = MenuItem.query.filter_by(available=True).all()
         
-        # Try LLM search first if available
-        from app.utils.llm import llm_search, is_llm_available
-        llm_results = None
-        if is_llm_available():
-            llm_results = llm_search(query, all_items)
-            
-        if llm_results:
-            items_by_id = {item.id: item for item in all_items}
-            results = []
-            for res in llm_results:
-                item_id = res.get('id')
-                if item_id in items_by_id:
-                    item = items_by_id[item_id]
-                    results.append({
-                        **item.to_dict(),
-                        'relevance_score': res.get('score', 100),
-                        'match_reason': res.get('reason', '')
-                    })
-            return jsonify({
-                'success': True,
-                'query': query,
-                'data': results,
-                'total': len(results),
-                'llm_powered': True
-            }), 200
-            
-        # Fallback to local heuristic scoring
+        # Local heuristic scoring
         scored_items = []
         for item in all_items:
             score = calculate_relevance_score(query, item)
@@ -194,42 +168,7 @@ def get_recommendations():
         # Filter cart items
         cart_items = [item for item in all_items if item.id in cart_ids]
         
-        # 1. Try LLM recommendations first if available
-        from app.utils.llm import llm_recommend, is_llm_available
-        llm_results = []
-        if is_llm_available() and cart_items:
-            llm_results = llm_recommend(cart_items, all_items)
-            
-        if llm_results:
-            items_by_id = {item.id: item for item in all_items}
-            results = []
-            for res in llm_results:
-                item_id = res.get('id')
-                if item_id in items_by_id and item_id not in cart_ids:
-                    item = items_by_id[item_id]
-                    results.append({
-                        **item.to_dict(),
-                        'recommendation_reason': res.get('reason', '')
-                    })
-            
-            # Pad to 3 items if needed
-            if len(results) < 3:
-                for item in all_items:
-                    if item.id not in cart_ids and not any(r['id'] == item.id for r in results):
-                        results.append({
-                            **item.to_dict(),
-                            'recommendation_reason': "Popular choice on FoodHub!"
-                        })
-                        if len(results) >= 3:
-                            break
-            
-            return jsonify({
-                'success': True,
-                'data': results[:3],
-                'llm_powered': True
-            }), 200
-            
-        # 2. Heuristic fallback (suggest up to 3 items from other categories)
+        # Heuristic recommendations (suggest up to 3 items from other categories)
         cart_categories = {item.category for item in cart_items}
         suggestions = []
         
