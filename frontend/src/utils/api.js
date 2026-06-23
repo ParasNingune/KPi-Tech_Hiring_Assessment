@@ -12,7 +12,6 @@ const api = axios.create({
 // Menu endpoints
 export const menuAPI = {
   getAll: (category, showAll = false) => api.get('/menu', { params: { category, all: showAll } }),
-  getById: (id) => api.get(`/menu/${id}`),
   getCategories: () => api.get('/menu/categories'),
   create: (data) => api.post('/menu', data),
   update: (id, data) => api.put(`/menu/${id}`, data),
@@ -32,8 +31,6 @@ export const orderAPI = {
 // Search endpoints
 export const searchAPI = {
   search: (query) => api.get('/search', { params: { q: query } }),
-  getSuggestions: () => api.get('/search/suggestions'),
-  getRecommendations: (cartIds) => api.get('/search/recommendations', { params: { cart_ids: cartIds } }),
   chatbot: (message) => api.post('/search/chatbot', { message }),
   getFrequentlyBought: (itemId, cartIds = '') => api.get(`/recommendations/frequently-bought/${itemId}`, { params: { cart_ids: cartIds } }),
   getPersonalized: (email) => api.get('/recommendations/personalized', { params: { customer_email: email } }),
